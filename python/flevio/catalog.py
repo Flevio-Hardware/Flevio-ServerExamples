@@ -101,9 +101,12 @@ EVENTS: Dict[int, Event] = {
         # --- ignition and motion ---
         Event(1, "IGN_ON", "Ignition ON", True),
         Event(2, "IGN_OFF", "Ignition OFF", True),
-        Event(5, "MOVING", "Vehicle started moving", True),
-        Event(6, "BEGIN_STOP", "Begin stop", True),
-        Event(7, "END_STOP", "End stop", False),
+        Event(5, "TRIP_START", "Trip started", True),
+        Event(6, "TRIP_STOP", "Trip ended", True),
+        # Code 7 was END_STOP, which the device wrote in the same second as
+        # the trip start and which said the same thing. It is retired rather
+        # than reused: a server that still knows the old name sees the event
+        # stop occurring, instead of seeing it come to mean something else.
         Event(19, "TOWING", "Movement with ignition off", False),
         # --- periodic and on demand ---
         Event(3, "ON_PERIODIC", "Periodic (ignition on)", False),
