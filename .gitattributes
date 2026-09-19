@@ -1,0 +1,26 @@
+# Line endings, decided once for everyone who clones this.
+#
+# Without this file the repository's contents depend on each contributor's
+# local git settings. Two things go wrong, and only one of them is cosmetic:
+#
+#  * A clone on Windows checks out CRLF. Any other tool looking at that
+#    working tree - a container, a CI runner, a second git with different
+#    settings - reports every file as modified, and the real change you were
+#    looking for is buried in twenty-one files of noise.
+#
+#  * A shell script committed with CRLF fails on Linux with "bad interpreter:
+#    No such file or directory", which names the wrong problem entirely and
+#    costs somebody an afternoon.
+#
+# So: everything is stored as LF, checked out however the platform likes.
+* text=auto
+
+# Except these, which are executed rather than read. They are LF on disk on
+# every platform, because the kernel reads the shebang literally.
+*.sh text eol=lf
+
+# Not text. Never touch these.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.bundle binary
