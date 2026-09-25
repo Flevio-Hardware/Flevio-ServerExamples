@@ -34,7 +34,7 @@ from .protocol import (
     F_PRIO_SHIFT,
     F_SATS,
     F_SPEED,
-    IO_STRING_MIN,
+    IO_STRING_MIN, IO_EXT, EXT_BLOB,
     K_DATA,
     K_HELLO,
     K_PING,
@@ -118,21 +118,43 @@ def encode_record(r: Record, prev: Optional[Record]) -> bytes:
     if flags & F_SATS:
         body += bytes([r.sats & 0xFF, int(round((r.hdop or 0) * 10)) & 0xFF])
 
-    # Elements: what changed, then what went away.
+    # Elements: what changed, then what went away. Extended elements ride
+    # inside id 254; one that went away is a tombstone in the changed list,
+    # because the removal list is byte-wide.
     base = prev.io if delta else {}
+    base_ext = prev.ext if delta else {}
     changed = [(k, v) for k, v in sorted(r.io.items()) if base.get(k) != v]
-    body += put_varint(len(changed))
+    ext_changed = [(k, v) for k, v in sorted(r.ext.items()) if base_ext.get(k) != v]
+    ext_gone = [k for k in sorted(base_ext) if k not in r.ext]
+    body += put_varint(len(changed) + len(ext_changed) + len(ext_gone))
     for io_id, value in changed:
         body += bytes([io_id])
         if io_id >= IO_STRING_MIN:
             body += put_str8(value if isinstance(value, str) else str(value))
         else:
             body += put_svarint(int(value))
+    for ext_id, value in ext_changed:
+        body += _ext_element(ext_id, value)
+    for ext_id in ext_gone:
+        body += _ext_element(ext_id, None)
     if delta:
         gone = [k for k in sorted(base) if k not in r.io]
         body += put_varint(len(gone)) + bytes(gone)
 
     return bytes(head + body)
+
+
+def _ext_element(ext_id: int, value) -> bytes:
+    """``254, len, varint ext_id, payload``; ``value=None`` is a tombstone."""
+    inner = put_varint(ext_id)
+    if value is not None:
+        if ext_id & EXT_BLOB:
+            inner += bytes(value)
+        else:
+            inner += put_svarint(int(value))
+    if len(inner) > 255:
+        raise ValueError("extended element %d does not fit" % ext_id)
+    return bytes([IO_EXT, len(inner)]) + inner
 
 
 def encode_records(records: Iterable[Record]) -> List[bytes]:
@@ -192,11 +214,16 @@ def hello_frame(
     fw: str = "",
     cfg_revision: int = 0,
     want_ack: bool = True,
-    version: int = 1,
+    version: int = 2,
+    model: str = "",
+    hw: str = "",
+    caps: str = "",
 ) -> bytes:
     payload = bytes([version, 0x01 if want_ack else 0x00])
     payload += put_str8(imei) + put_str8(serial) + put_str8(fw)
     payload += put_varint(cfg_revision)
+    if version >= 2:
+        payload += put_str8(model) + put_str8(hw) + put_str8(caps)
     return build_frame(K_HELLO, payload)
 
 

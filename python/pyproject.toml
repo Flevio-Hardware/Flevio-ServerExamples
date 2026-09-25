@@ -23,9 +23,15 @@ classifiers = [
 # project as often as you install it.
 dependencies = []
 
+[project.optional-dependencies]
+mqtt = ["paho-mqtt>=2"]
+
 [project.urls]
 Homepage = "https://firsteld.com"
 Source = "https://github.com/Flevio-Hardware/Flevio-ServerExamples"
 
 [tool.setuptools]
 packages = ["flevio"]
+
+[tool.setuptools.package-data]
+flevio = ["params.json"]

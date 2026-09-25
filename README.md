@@ -11,7 +11,7 @@ port it to your language.
 
 | | | |
 |---|---|---|
-| [`python/`](python/) | Python 3.8+, no dependencies | TCP and UDP, acknowledgements, downlink commands, JSON-lines and SQLite storage, a truck simulator, four example servers |
+| [`python/`](python/) | Python 3.8+, no dependencies (MQTT: `paho-mqtt`) | TCP, UDP and MQTT, acknowledgements, commands, every event, element and configuration parameter, a truck simulator, two example servers |
 
 ## Start here
 
@@ -19,11 +19,13 @@ port it to your language.
 git clone https://github.com/Flevio-Hardware/Flevio-ServerExamples
 cd Flevio-ServerExamples/python
 
-python3 examples/01_print_records.py        # a server on :5600
+python3 examples/server.py                  # a server on :5600
 python3 -m flevio.simulator                 # a truck, in another terminal
 ```
 
-A truck drives from Manhattan towards Newark and reports every simulated
+`examples/server.py` (TCP and UDP) and `examples/mqtt_server.py` (a broker of
+yours) print how to point a device at them, show everything it sends and take
+commands at a prompt. A truck drives from Manhattan towards Newark and reports every simulated
 minute, with engine RPM, coolant temperature, odometer and VIN decoded. No
 hardware required, and nothing to install first.
 

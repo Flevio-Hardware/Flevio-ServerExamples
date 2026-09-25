@@ -65,6 +65,8 @@ def record_to_dict(imei: Optional[str], r: Record, received_at: Optional[float] 
         if value is not None:
             d[key] = value
     d["io"] = catalog.decode_io(r.io)
+    if r.ext:
+        d["ext"] = catalog.decode_ext(r.ext)
     return d
 
 

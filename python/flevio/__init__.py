@@ -21,7 +21,10 @@ Modules, in the order they are worth reading:
   no I/O, nothing to configure. If you are porting to another language, this
   file is the specification.
 * :mod:`flevio.catalog`   - what event 17 and element 205 mean, with units.
+* :mod:`flevio.params`    - every configuration parameter: GETPARAMS and
+  SETPARAMS, checked before they go out.
 * :mod:`flevio.server`    - TCP and UDP, acknowledgements, commands.
+* :mod:`flevio.cmdqueue`  - commands for devices that are offline (MQTT).
 * :mod:`flevio.sinks`     - JSON lines and SQLite, both committing before
   they acknowledge.
 * :mod:`flevio.device`    - the encoder, for tests and the simulator.

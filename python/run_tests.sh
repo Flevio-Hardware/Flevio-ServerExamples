@@ -11,14 +11,18 @@ echo "== server: the simulator against the server, with frames dropped"
 python3 tests/test_server.py
 
 echo
+echo "== command queue: commands for devices that are offline"
+python3 tests/test_cmdqueue.py
+
+echo
+echo "== parameters: the table is whole and agrees with the events"
+python3 tests/test_params.py
+
+echo
 echo "== examples import cleanly"
 for f in examples/*.py; do
     python3 -c "import ast,sys; ast.parse(open('$f').read())"
 done
-
-echo
-echo "== the shipped capture decodes"
-python3 examples/04_decode_hex.py --corpus > /dev/null
 
 echo
 echo "all good"

@@ -1,0 +1,3833 @@
+{
+ "schema_version": 2,
+ "generated_by": "FE-OT100-firmware tools/gen_config.py from config/params.json - do not edit",
+ "access_levels": {
+  "user": "Writable from every channel: console/configurator, driver application, data server, SMS.",
+  "protected": "Writable only after the channel presented config_password (console: `cfg auth`).",
+  "locked": "Writable only by FlevioDMS, or from the console after `cfg unlock <code>` with the per-device factory code."
+ },
+ "groups": [
+  {
+   "id": "system",
+   "title": "System",
+   "order": 1,
+   "icon": "SY",
+   "blurb": "Identity, passwords and the rollback that saves a device from a bad configuration."
+  },
+  {
+   "id": "network",
+   "title": "Cellular network",
+   "order": 2,
+   "icon": "NW",
+   "blurb": "The SIM's access point and which radio the modem is allowed to use."
+  },
+  {
+   "id": "server1",
+   "title": "Data server (first)",
+   "order": 3,
+   "icon": "S1",
+   "blurb": "Where telemetry goes, and how the device knows it arrived."
+  },
+  {
+   "id": "server2",
+   "title": "Data server (second)",
+   "order": 4,
+   "icon": "S2",
+   "blurb": "A second destination: a backup, or a duplicate feed."
+  },
+  {
+   "id": "transport",
+   "title": "Transport & store-and-forward",
+   "order": 5,
+   "icon": "TX",
+   "blurb": "When records leave the device, and what happens to them while they cannot."
+  },
+  {
+   "id": "dms",
+   "title": "Device management (DMS)",
+   "order": 6,
+   "icon": "DM",
+   "blurb": "The channel that can fix a device remotely. Locked, because it is the last one."
+  },
+  {
+   "id": "health",
+   "title": "Health & self-recovery",
+   "order": 7,
+   "icon": "HL",
+   "blurb": "What the device does about its own faults before anyone notices them."
+  },
+  {
+   "id": "tracking",
+   "title": "Tracking sources",
+   "order": 8,
+   "icon": "TR",
+   "blurb": "Where movement, speed and ignition are read from, and what counts as each."
+  },
+  {
+   "id": "acq_stop",
+   "title": "Data acquisition - on stop",
+   "order": 9,
+   "icon": "ST",
+   "blurb": "How often a parked vehicle produces and sends a record."
+  },
+  {
+   "id": "acq_move",
+   "title": "Data acquisition - moving",
+   "order": 10,
+   "icon": "MV",
+   "blurb": "What makes a moving vehicle write a record, and when the batch is sent."
+  },
+  {
+   "id": "acq_demand",
+   "title": "On demand tracking",
+   "order": 11,
+   "icon": "OD",
+   "blurb": "Short bursts of dense tracking, asked for from the server or an SMS."
+  },
+  {
+   "id": "accel",
+   "title": "Driving behaviour",
+   "order": 12,
+   "icon": "DB",
+   "blurb": "Harsh driving, crashes, towing, idling and speeding."
+  },
+  {
+   "id": "can",
+   "title": "OBD2 / J1939",
+   "order": 13,
+   "icon": "CB",
+   "blurb": "The vehicle bus, and where the VIN, odometer and engine hours come from."
+  },
+  {
+   "id": "ble",
+   "title": "Bluetooth (driver application)",
+   "order": 14,
+   "icon": "BT",
+   "blurb": "The link to the driver's phone."
+  },
+  {
+   "id": "io",
+   "title": "Indication",
+   "order": 15,
+   "icon": "IO",
+   "blurb": "The status LED."
+  },
+  {
+   "id": "events",
+   "title": "Events",
+   "order": 16,
+   "icon": "EV",
+   "blurb": "Which events are transmitted, and which are shown in the driver application."
+  }
+ ],
+ "blocks": [
+  {
+   "id": "sys_identity",
+   "group": "system",
+   "title": "Device identity",
+   "help": "Written once at manufacture. It identifies the device in every record.",
+   "order": 1
+  },
+  {
+   "id": "sys_access",
+   "group": "system",
+   "title": "Passwords and access",
+   "help": "The configuration password raises a channel to the protected level; the SMS password is required on every SMS, and an empty one refuses SMS commands entirely.",
+   "order": 2
+  },
+  {
+   "id": "sys_rollback",
+   "group": "system",
+   "title": "Configuration rollback",
+   "help": "A new configuration is on trial until the device reaches any server. If it does not, the previous one comes back by itself - this is what keeps a wrong APN from costing a truck roll.",
+   "order": 3
+  },
+  {
+   "id": "net_apn",
+   "group": "network",
+   "title": "Access point",
+   "help": "From the SIM's operator. A wrong APN takes the device off the network, and a device off the network cannot be fixed remotely.",
+   "order": 4
+  },
+  {
+   "id": "net_radio",
+   "group": "network",
+   "title": "Radio and operator",
+   "help": "Which network the modem may use. Leave the operator lock empty unless a fleet runs on one network by contract.",
+   "order": 5
+  },
+  {
+   "id": "srv1_address",
+   "group": "server1",
+   "title": "Server address",
+   "help": "Where the records go. This is the customer's server, not ours.",
+   "order": 6
+  },
+  {
+   "id": "srv1_ack",
+   "group": "server1",
+   "title": "Keepalive and acknowledgement",
+   "help": "Whether the server confirms each packet, and how long the device waits before treating one as lost.",
+   "order": 7
+  },
+  {
+   "id": "srv2_main",
+   "group": "server2",
+   "title": "Second destination",
+   "help": "Backup sends here only while the first server is unreachable; Duplicate sends everything to both, and doubles the traffic.",
+   "order": 8
+  },
+  {
+   "id": "tr_send",
+   "group": "transport",
+   "title": "When records are sent",
+   "help": "The main lever on data volume, together with the event masks.",
+   "order": 9
+  },
+  {
+   "id": "tr_queue",
+   "group": "transport",
+   "title": "Store and forward",
+   "help": "What the device keeps while it has no network, and when unsent records become too old to be worth sending.",
+   "order": 10
+  },
+  {
+   "id": "tr_embargo",
+   "group": "transport",
+   "title": "Reconnect embargoes",
+   "help": "How long to wait before trying a server again after a failure, so a dead server does not burn a data plan.",
+   "order": 11
+  },
+  {
+   "id": "dms_server",
+   "group": "dms",
+   "title": "Management server",
+   "help": "The firmware carries an immutable fallback address, which is what rescues a device when a wrong one lands here. The session port carries everything but file bytes; the HTTP port carries those.",
+   "order": 12
+  },
+  {
+   "id": "dms_schedule",
+   "group": "dms",
+   "title": "Check-in schedule",
+   "help": "Full check-ins prove the server is usable; presence reports prove the device is alive and where it is; the keepalive is what holds the session open between them, and costs almost nothing.",
+   "order": 13
+  },
+  {
+   "id": "dms_reports",
+   "group": "dms",
+   "title": "Reports and firmware",
+   "help": "What the device reports on its own, and how long new firmware has to prove itself - and how many short boots it is allowed - before it is confirmed.",
+   "order": 14
+  },
+  {
+   "id": "hl_recovery",
+   "group": "health",
+   "title": "Self recovery",
+   "help": "Remedies the device applies to itself before a person is involved.",
+   "order": 15
+  },
+  {
+   "id": "trk_sources",
+   "group": "tracking",
+   "title": "Sources",
+   "help": "Which of the bus, GNSS and the accelerometer answers each question. Everything below depends on these three.",
+   "order": 16
+  },
+  {
+   "id": "trk_ignition",
+   "group": "tracking",
+   "title": "Ignition detection",
+   "help": "Automatic uses engine RPM from the bus and falls back to the supply voltage; the thresholds here are for a 12 V system and are doubled on a 24 V one.",
+   "order": 17
+  },
+  {
+   "id": "trk_movement",
+   "group": "tracking",
+   "title": "Movement detection",
+   "help": "The delays are what stop a truck at a rail crossing from producing a stop and a start.",
+   "order": 18
+  },
+  {
+   "id": "trk_gnss",
+   "group": "tracking",
+   "title": "GNSS fix quality",
+   "help": "A position the device will not trust is not recorded. The engine-off limit is separate because a parked vehicle has time to wait for a better fix. The sharing and assistance settings below decide how fast a fix arrives at all.",
+   "order": 19
+  },
+  {
+   "id": "trk_dr",
+   "group": "tracking",
+   "title": "Dead reckoning",
+   "help": "What the device does with the position while the sky is gone: a tunnel, a covered yard, a parking deck. Reckoned positions are marked as such in every record.",
+   "order": 20
+  },
+  {
+   "id": "trk_heading",
+   "group": "tracking",
+   "title": "Heading change",
+   "help": "Corner records: a course change only counts above a speed and a distance, or a vehicle turning in a yard fills the queue.",
+   "order": 21
+  },
+  {
+   "id": "trk_power",
+   "group": "tracking",
+   "title": "Power and backup battery",
+   "help": "When a cut supply is reported, and when the backup battery is called low.",
+   "order": 22
+  },
+  {
+   "id": "trk_telemetry",
+   "group": "tracking",
+   "title": "Vehicle telemetry",
+   "help": "Full snapshots of the vehicle bus - temperatures, pressures, fuel, lamps - and how long such perishable records are worth keeping while the device is offline.",
+   "order": 23
+  },
+  {
+   "id": "acq_stop_main",
+   "group": "acq_stop",
+   "title": "Vehicle on stop",
+   "help": "A parked vehicle still has to report, or it is indistinguishable from a dead device.",
+   "order": 24
+  },
+  {
+   "id": "acq_move_rec",
+   "group": "acq_move",
+   "title": "Write a record when",
+   "help": "Any one of these is enough. Distance and angle together are what make a track follow the road rather than cut corners.",
+   "order": 25
+  },
+  {
+   "id": "acq_move_send",
+   "group": "acq_move",
+   "title": "Sending",
+   "help": "Records accumulate and leave in batches: one connection for ten records costs far less than ten connections.",
+   "order": 26
+  },
+  {
+   "id": "acq_demand_main",
+   "group": "acq_demand",
+   "title": "On demand tracking",
+   "help": "Dense tracking for a set number of minutes, started by LIVETRACK from the server or an SMS.",
+   "order": 27
+  },
+  {
+   "id": "beh_enable",
+   "group": "accel",
+   "title": "Driving behaviour",
+   "help": "The master switch for everything on this page.",
+   "order": 28
+  },
+  {
+   "id": "beh_motion",
+   "group": "accel",
+   "title": "Motion sensing",
+   "help": "How long vibration has to last before the accelerometer alone calls the vehicle moving, or still. Used when the movement source is the accelerometer, and by towing detection.",
+   "order": 29
+  },
+  {
+   "id": "beh_harsh",
+   "group": "accel",
+   "title": "Harsh acceleration, braking and cornering",
+   "help": "Thresholds are in milligravity. The minimum speed keeps a bump in a yard from counting as harsh braking.",
+   "order": 30
+  },
+  {
+   "id": "beh_crash",
+   "group": "accel",
+   "title": "Crash detection",
+   "help": "A crash is a much larger acceleration over a much shorter time than harsh braking.",
+   "order": 31
+  },
+  {
+   "id": "beh_towing",
+   "group": "accel",
+   "title": "Towing detection",
+   "help": "Movement with the ignition off: the vehicle is being taken somewhere, and nobody turned the key.",
+   "order": 32
+  },
+  {
+   "id": "beh_idling",
+   "group": "accel",
+   "title": "Excessive idling",
+   "help": "Engine running, vehicle stopped, for longer than a fleet is willing to pay for.",
+   "order": 33
+  },
+  {
+   "id": "beh_speed",
+   "group": "accel",
+   "title": "Overspeeding",
+   "help": "One limit for the whole fleet; road-specific limits belong on the server, which knows where the vehicle is.",
+   "order": 34
+  },
+  {
+   "id": "can_bus",
+   "group": "can",
+   "title": "Bus connection",
+   "help": "Auto-detection covers both pin pairs and both bitrates. Set a mode by hand only for a vehicle it gets wrong.",
+   "order": 35
+  },
+  {
+   "id": "can_vin",
+   "group": "can",
+   "title": "Vehicle identification",
+   "help": "A VIN typed in by hand overrides the bus - for a vehicle that does not publish one.",
+   "order": 36
+  },
+  {
+   "id": "can_counters",
+   "group": "can",
+   "title": "Odometer and engine hours",
+   "help": "The offsets exist so a replacement device continues the vehicle's numbers instead of restarting them at zero.",
+   "order": 37
+  },
+  {
+   "id": "ble_radio",
+   "group": "ble",
+   "title": "Bluetooth",
+   "help": "The radio, the name the driver sees in the list, and the pairing PIN.",
+   "order": 38
+  },
+  {
+   "id": "ble_app",
+   "group": "ble",
+   "title": "Driver application",
+   "help": "How often the phone is given fresh telemetry, and whether it may send commands back.",
+   "order": 39
+  },
+  {
+   "id": "io_indication",
+   "group": "io",
+   "title": "Indication",
+   "help": "The status LED: what a person in the cab can see.",
+   "order": 40
+  },
+  {
+   "id": "ev_server",
+   "group": "events",
+   "title": "Sent to the server",
+   "help": "Clearing a bit stops the event reaching the server at all - the most effective way to cut data volume. Essential events cannot be cleared: without them the records are not ELD records.",
+   "order": 41
+  },
+  {
+   "id": "ev_ble",
+   "group": "events",
+   "title": "Shown in the driver application",
+   "help": "What reaches the phone over Bluetooth.",
+   "order": 42
+  }
+ ],
+ "models": [
+  {
+   "code": "FE-OT100",
+   "name": "Flevio Tracker (OBD2 + J1939)",
+   "caps": [
+    "gnss",
+    "lte-m",
+    "nb-iot",
+    "sms",
+    "ble",
+    "imu",
+    "can2",
+    "obd2",
+    "j1939",
+    "bat"
+   ]
+  },
+  {
+   "code": "FE-ST-50",
+   "name": "Flevio Simple Tracker (5-wire)",
+   "caps": [
+    "gnss",
+    "lte-m",
+    "nb-iot",
+    "sms",
+    "imu",
+    "din1",
+    "ain1",
+    "dout1"
+   ],
+   "status": "planned"
+  }
+ ],
+ "capabilities": {
+  "gnss": "Satellite positioning (built into the modem)",
+  "lte-m": "LTE Cat-M1",
+  "nb-iot": "NB-IoT",
+  "sms": "SMS commands",
+  "ble": "Bluetooth driver application",
+  "imu": "Accelerometer: driving behaviour, movement, towing",
+  "can2": "Two CAN interfaces (OBD2 and J1939 connectors)",
+  "obd2": "OBD2 diagnostics and telemetry",
+  "j1939": "J1939 heavy-duty telemetry",
+  "bat": "Backup battery: power-cut reporting, records after ignition off",
+  "din1": "Digital input 1 (ignition)",
+  "ain1": "Analogue input 1 (0-30 V)",
+  "dout1": "Open-collector output 1 (relay)",
+  "ble-sensors": "Listens for Bluetooth sensors and reports them as extended elements 2000-2999",
+  "1wire": "1-Wire bus: driver keys and thermometers",
+  "rs485": "RS-485 serial sensors: fuel level, axle load"
+ },
+ "text_format": {
+  "command": "SETPARAMS",
+  "separator": ";",
+  "assign": "="
+ },
+ "event_masks": {
+  "server": [
+   220,
+   221
+  ],
+  "ble": [
+   226,
+   227
+  ]
+ },
+ "params": [
+  {
+   "id": 1,
+   "key": "device_serial",
+   "group": "system",
+   "block": "sys_identity",
+   "type": "str",
+   "len": 16,
+   "default": "",
+   "title": "Serial number",
+   "help": "The serial number printed on the label. Written once at manufacture by FlevioDMS; it identifies the device in every record and is not something a customer changes.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 2,
+   "key": "config_password",
+   "group": "system",
+   "block": "sys_access",
+   "type": "str",
+   "len": 16,
+   "default": "",
+   "title": "Configuration password",
+   "help": "Unlocks the protected parameters (network, servers, bus mode) for the configurator, the driver application and the data server. An empty password means those channels cannot write protected parameters at all - not that anyone can.",
+   "access": "protected",
+   "secret": true,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 3,
+   "key": "sms_password",
+   "group": "system",
+   "block": "sys_access",
+   "type": "str",
+   "len": 16,
+   "default": "",
+   "title": "SMS command password",
+   "help": "Required for SMS commands. An empty password means SMS commands are refused entirely - otherwise anyone who learns the SIM number could operate the device.",
+   "access": "protected",
+   "secret": true,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 4,
+   "key": "sms_allow_list",
+   "group": "system",
+   "block": "sys_access",
+   "type": "str",
+   "len": 96,
+   "default": "",
+   "title": "Allowed SMS senders",
+   "help": "Comma-separated numbers that commands are accepted from. Empty = any number, provided the password is correct.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 5,
+   "key": "recovery_enabled",
+   "group": "system",
+   "block": "sys_rollback",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Auto rollback of configuration",
+   "help": "If the device cannot reach the server for longer than the given time after a configuration write, restore the previous one. This is the protection against a wrong APN or server address pushed to a whole fleet.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 6,
+   "key": "recovery_timeout_min",
+   "group": "system",
+   "block": "sys_rollback",
+   "type": "u16",
+   "default": 120,
+   "min": 10,
+   "max": 10080,
+   "unit": "min",
+   "title": "Time before configuration rollback",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 7,
+   "key": "fw_soak_min",
+   "group": "dms",
+   "block": "dms_reports",
+   "type": "u8",
+   "default": 5,
+   "min": 0,
+   "max": 30,
+   "unit": "min",
+   "title": "Soak before confirming new firmware",
+   "help": "How long a new image must keep running before the rollback window is closed. A check-in alone proves the modem came up; it does not prove the image survives the next five minutes, and an image that panics after it has been confirmed can no longer be undone. Must be less than the confirmation deadline. 0 confirms on the first check-in.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 8,
+   "key": "fw_loop_boots",
+   "group": "dms",
+   "block": "dms_reports",
+   "type": "u8",
+   "default": 3,
+   "min": 0,
+   "max": 10,
+   "unit": "",
+   "title": "Short boots before rolling back",
+   "help": "Consecutive boots that ended before the soak, while running unconfirmed firmware. A device restarting in a loop can never finish a download, so it cannot be repaired over the air even if it checks in inside every boot. 0 disables the guard.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 9,
+   "key": "imu_move_s",
+   "group": "accel",
+   "block": "beh_motion",
+   "type": "u16",
+   "default": 1,
+   "min": 0,
+   "max": 300,
+   "unit": "s",
+   "title": "Accelerometer: time before movement is called",
+   "help": "How long the dynamic acceleration must stay above the movement threshold before the accelerometer says the device is moving. This is the accelerometer's own answer, not the trip: a trip starts on speed and is governed by move_start_s.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 10,
+   "key": "imu_still_s",
+   "group": "accel",
+   "block": "beh_motion",
+   "type": "u16",
+   "default": 10,
+   "min": 0,
+   "max": 600,
+   "unit": "s",
+   "title": "Accelerometer: time before stillness is called",
+   "help": "How long the dynamic acceleration must stay below the threshold before the accelerometer says the device is still. Short on purpose: this used to borrow move_stop_s, which is 90 seconds because a truck at a red light must not end a trip - and that left the accelerometer claiming movement for a minute and a half after everything had stopped.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 11,
+   "key": "hw_rev",
+   "group": "system",
+   "block": "sys_identity",
+   "type": "str",
+   "len": 16,
+   "default": "",
+   "title": "Hardware revision",
+   "help": "The board revision this unit was built as, e.g. rev0.3. Written once at manufacture by the production bench, next to the serial number; the firmware reports it to FlevioDMS so the same build can run on every revision and the server still knows which board is in the field. Empty means the revision the firmware was written against.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 20,
+   "key": "apn",
+   "group": "network",
+   "block": "net_apn",
+   "type": "str",
+   "len": 64,
+   "default": "super",
+   "title": "APN",
+   "help": "The access point name the SIM's operator expects. \"super\" is what the SIMs we ship use, so a device works out of the box; a customer bringing their own SIM almost certainly has to change it. Wrong here and the modem registers on the network and still never gets an address - which reads as \"no signal\" to everyone looking at it.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 21,
+   "key": "apn_user",
+   "group": "network",
+   "block": "net_apn",
+   "type": "str",
+   "len": 32,
+   "default": "",
+   "title": "APN username",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 22,
+   "key": "apn_pass",
+   "group": "network",
+   "block": "net_apn",
+   "type": "str",
+   "len": 32,
+   "default": "",
+   "title": "APN password",
+   "access": "protected",
+   "secret": true,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 23,
+   "key": "apn_auth",
+   "group": "network",
+   "block": "net_apn",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "none",
+     "label": "None"
+    },
+    {
+     "v": 1,
+     "name": "pap",
+     "label": "PAP"
+    },
+    {
+     "v": 2,
+     "name": "chap",
+     "label": "CHAP"
+    },
+    {
+     "v": 3,
+     "name": "auto",
+     "label": "PAP or CHAP"
+    }
+   ],
+   "title": "Authentication",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 24,
+   "key": "network_mode",
+   "group": "network",
+   "block": "net_radio",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "catm1",
+     "label": "LTE Cat-M1 only"
+    },
+    {
+     "v": 2,
+     "name": "nbiot",
+     "label": "NB-IoT only"
+    },
+    {
+     "v": 3,
+     "name": "gsm",
+     "label": "GSM only"
+    }
+   ],
+   "title": "Network mode",
+   "help": "Cat-M1 is faster and cheaper on power, NB-IoT reaches further.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 25,
+   "key": "operator_lock",
+   "group": "network",
+   "block": "net_radio",
+   "type": "str",
+   "len": 8,
+   "default": "",
+   "title": "Operator lock (MCCMNC)",
+   "help": "Numeric MCCMNC of one operator: the country code followed by the network code, five or six digits. Empty is almost always right: the device then chooses automatically and, if a network refuses the SIM, scans and tries the others in range - which is what a roaming M2M SIM needs, because the operator that accepts it in one state refuses it in the next. Set this only to pin a device to a network deliberately; a locked device in a place that operator does not cover reports nothing at all.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 30,
+   "key": "srv1_host",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "str",
+   "len": 128,
+   "default": "",
+   "title": "Domain or IP",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 31,
+   "key": "srv1_port",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "u16",
+   "default": 5000,
+   "min": 1,
+   "max": 65535,
+   "title": "Port",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 32,
+   "key": "srv1_protocol",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "tcp",
+     "label": "TCP"
+    },
+    {
+     "v": 1,
+     "name": "udp",
+     "label": "UDP"
+    },
+    {
+     "v": 2,
+     "name": "mqtt",
+     "label": "MQTT (the customer's broker)"
+    }
+   ],
+   "title": "Protocol",
+   "help": "TCP is the normal choice: the server acknowledges every packet and nothing is lost in a tunnel. UDP is fire-and-forget and only makes sense with the acknowledgement off. MQTT sends the same packets through the customer's broker: the host and port are the broker's, the broker's acknowledgement is the delivery receipt, and commands arrive on a topic instead of the socket.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 33,
+   "key": "srv1_keepalive_s",
+   "group": "server1",
+   "block": "srv1_ack",
+   "type": "u16",
+   "default": 60,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Keepalive / ping period",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 34,
+   "key": "srv1_ack_mode",
+   "group": "server1",
+   "block": "srv1_ack",
+   "type": "enum",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "enum": [
+    {
+     "v": 0,
+     "name": "off",
+     "label": "Off - fire and forget"
+    },
+    {
+     "v": 1,
+     "name": "on",
+     "label": "On - server acknowledges every packet"
+    }
+   ],
+   "title": "Packet acknowledgement",
+   "help": "On: a packet counts as delivered only when the server answers with its sequence number, and anything unacknowledged is sent again - this is what makes the log a reliable record. Off: a packet counts as delivered the moment the modem accepted it; cheaper by one small frame per packet and fine for a server that only wants the latest position.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 35,
+   "key": "srv1_ack_timeout_s",
+   "group": "server1",
+   "block": "srv1_ack",
+   "type": "u16",
+   "default": 30,
+   "min": 5,
+   "max": 300,
+   "unit": "s",
+   "title": "Acknowledgement timeout",
+   "help": "How long to wait for the server's acknowledgement before the packet is considered lost and the connection is reopened.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 34,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 36,
+   "key": "srv1_tls",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "off",
+     "label": "Off"
+    },
+    {
+     "v": 1,
+     "name": "encrypt",
+     "label": "Encrypted, server not verified"
+    },
+    {
+     "v": 2,
+     "name": "verify",
+     "label": "Encrypted, server verified"
+    }
+   ],
+   "title": "TLS",
+   "help": "For MQTT. Cloud brokers require TLS (usually port 8883). Verified checks the broker's certificate against the authorities built into the firmware; use 'not verified' only for a broker whose certificate none of them signed. The handshake costs a few kilobytes, but only when the session opens.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 32,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 37,
+   "key": "srv1_user",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "str",
+   "len": 64,
+   "default": "",
+   "title": "MQTT username",
+   "help": "For MQTT. Empty sends the IMEI, which is also the client id.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 32,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 38,
+   "key": "srv1_password",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "str",
+   "len": 64,
+   "default": "",
+   "title": "MQTT password",
+   "access": "protected",
+   "secret": true,
+   "depends": {
+    "param": 32,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 39,
+   "key": "srv1_topic",
+   "group": "server1",
+   "block": "srv1_address",
+   "type": "str",
+   "len": 32,
+   "default": "flevio",
+   "title": "Topic prefix",
+   "help": "For MQTT. The device publishes on <prefix>/<IMEI>/data, /hello and /status, and listens for commands on <prefix>/<IMEI>/cmd.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 32,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 40,
+   "key": "srv2_mode",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "disabled",
+     "label": "Disabled"
+    },
+    {
+     "v": 1,
+     "name": "backup",
+     "label": "Backup"
+    },
+    {
+     "v": 2,
+     "name": "duplicate",
+     "label": "Duplicate"
+    }
+   ],
+   "title": "Second server mode",
+   "help": "Backup is used only when the first server is unreachable. Duplicate sends every record to both servers.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 41,
+   "key": "srv2_host",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "str",
+   "len": 128,
+   "default": "",
+   "title": "Domain or IP",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 40,
+    "not": 0
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 42,
+   "key": "srv2_port",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "u16",
+   "default": 5000,
+   "min": 1,
+   "max": 65535,
+   "title": "Port",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 40,
+    "not": 0
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 43,
+   "key": "srv2_protocol",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "tcp",
+     "label": "TCP"
+    },
+    {
+     "v": 1,
+     "name": "udp",
+     "label": "UDP"
+    },
+    {
+     "v": 2,
+     "name": "mqtt",
+     "label": "MQTT (the customer's broker)"
+    }
+   ],
+   "title": "Protocol",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 40,
+    "not": 0
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 44,
+   "key": "srv2_tls",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "off",
+     "label": "Off"
+    },
+    {
+     "v": 1,
+     "name": "encrypt",
+     "label": "Encrypted, server not verified"
+    },
+    {
+     "v": 2,
+     "name": "verify",
+     "label": "Encrypted, server verified"
+    }
+   ],
+   "title": "TLS",
+   "help": "For MQTT. Cloud brokers require TLS (usually port 8883). Verified checks the broker's certificate against the authorities built into the firmware; use 'not verified' only for a broker whose certificate none of them signed. The handshake costs a few kilobytes, but only when the session opens.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 43,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 45,
+   "key": "srv2_user",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "str",
+   "len": 64,
+   "default": "",
+   "title": "MQTT username",
+   "help": "For MQTT. Empty sends the IMEI, which is also the client id.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 43,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 46,
+   "key": "srv2_password",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "str",
+   "len": 64,
+   "default": "",
+   "title": "MQTT password",
+   "access": "protected",
+   "secret": true,
+   "depends": {
+    "param": 43,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 47,
+   "key": "srv2_topic",
+   "group": "server2",
+   "block": "srv2_main",
+   "type": "str",
+   "len": 32,
+   "default": "flevio",
+   "title": "Topic prefix",
+   "help": "For MQTT. The device publishes on <prefix>/<IMEI>/data, /hello and /status, and listens for commands on <prefix>/<IMEI>/cmd.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 43,
+    "value": 2
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 50,
+   "key": "send_immediate",
+   "group": "transport",
+   "block": "tr_send",
+   "type": "enum",
+   "default": 1,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "batched",
+     "label": "Everything by the send periods"
+    },
+    {
+     "v": 1,
+     "name": "events",
+     "label": "Events at once, periodic batched"
+    },
+    {
+     "v": 2,
+     "name": "always",
+     "label": "Everything at once"
+    }
+   ],
+   "title": "When to send",
+   "help": "Periodic points are what the acquisition periods exist to batch - a track sent point by point costs several times the airtime for the same track. Events are the opposite: an ignition, a crash or a fault is worth little to a dispatcher ten minutes later. The default sends every event the moment it happens and lets periodic points travel with the next batch.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 51,
+   "key": "store_max_records",
+   "group": "transport",
+   "block": "tr_queue",
+   "type": "u32",
+   "default": 20000,
+   "min": 0,
+   "max": 200000,
+   "title": "Store-and-forward capacity",
+   "help": "How many unsent records to keep in the external flash while there is no link. At the cap the oldest is discarded to make room: a device back from a week offline is more useful reporting yesterday than the day it lost signal. 0 = no limit, and the flash ring is then the only bound - it reuses its oldest sector when full.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 52,
+   "key": "queue_max_age_h",
+   "group": "transport",
+   "block": "tr_queue",
+   "type": "u16",
+   "default": 0,
+   "min": 0,
+   "max": 8760,
+   "unit": "h",
+   "title": "Discard unsent records older than",
+   "help": "A device back from a fortnight in a yard has a backlog nobody wants: the positions are stale and the trip they describe closed long ago. 0 keeps everything until the flash ring wraps and the oldest sector is reused - the right answer for a fleet whose records are evidence, which is why it is the default. Records with no valid date are never discarded by age: 1970 is not old data, it is a device that had not been told the date yet.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 53,
+   "key": "heartbeat_s",
+   "group": "transport",
+   "block": "tr_send",
+   "type": "u32",
+   "default": 86400,
+   "min": 0,
+   "max": 604800,
+   "unit": "s",
+   "title": "Heartbeat interval",
+   "help": "0 = do not send.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 54,
+   "key": "tcp_embargo_s",
+   "group": "transport",
+   "block": "tr_embargo",
+   "type": "u16",
+   "default": 300,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "TCP reconnect embargo",
+   "help": "Pause before retrying after a failed connection - it saves both traffic and battery.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 55,
+   "key": "udp_embargo_s",
+   "group": "transport",
+   "block": "tr_embargo",
+   "type": "u16",
+   "default": 30,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "UDP reconnect embargo",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 56,
+   "key": "data_call_embargo_s",
+   "group": "transport",
+   "block": "tr_embargo",
+   "type": "u16",
+   "default": 300,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Data call embargo",
+   "help": "Pause after a failed PDP context activation.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 57,
+   "key": "periodic_identity",
+   "group": "transport",
+   "block": "tr_send",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Identity in every record",
+   "help": "Adds the serial number and the VIN to every record. Without it identity travels in the connection handshake, at the first VIN seen, at every ignition on and once an hour - which is cheaper, but a record on its own then no longer says which device and which truck it came from.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 60,
+   "key": "dms_host",
+   "group": "dms",
+   "block": "dms_server",
+   "type": "str",
+   "len": 128,
+   "default": "dms-server.flev.io",
+   "title": "DMS server",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 61,
+   "key": "dms_port",
+   "group": "dms",
+   "block": "dms_server",
+   "type": "u16",
+   "default": 80,
+   "min": 1,
+   "max": 65535,
+   "title": "Port",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 62,
+   "key": "dms_period_min",
+   "group": "dms",
+   "block": "dms_schedule",
+   "type": "u16",
+   "default": 720,
+   "min": 15,
+   "max": 10080,
+   "unit": "min",
+   "title": "Full check-in period",
+   "help": "How often the device checks in with FlevioDMS: sends its whole state (versions, diagnostics, queue, power) and picks up any waiting tasks - firmware, configuration, vehicle database. Twelve hours keeps the management traffic to a few kilobytes a day; a check-in can always be asked for sooner by SMS or from the data server (command CHECKIN).",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 63,
+   "key": "dms_ping_min",
+   "group": "dms",
+   "block": "dms_schedule",
+   "type": "u16",
+   "default": 10,
+   "min": 0,
+   "max": 1440,
+   "unit": "min",
+   "title": "Presence ping period",
+   "help": "How often the device says it is alive and where it is. The ping is a tenth the size of a full check-in, which is what makes ten minutes affordable: at this rate it costs well under a megabyte a month. 0 = ping only when the full check-in runs.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 64,
+   "key": "dms_ping_moving_min",
+   "group": "dms",
+   "block": "dms_schedule",
+   "type": "u16",
+   "default": 5,
+   "min": 0,
+   "max": 1440,
+   "unit": "min",
+   "title": "Presence ping period while moving",
+   "help": "A parked device does not need its position refreshed as often as a moving one. 0 = use the same period as when parked.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 65,
+   "key": "dms_fallback_after",
+   "group": "dms",
+   "block": "dms_server",
+   "type": "u8",
+   "default": 3,
+   "min": 0,
+   "max": 20,
+   "title": "Failures before fallback server",
+   "help": "After this many consecutive failed check-ins the device switches to the fallback address built into the firmware. 0 = never use the fallback.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 66,
+   "key": "fw_validate_min",
+   "group": "dms",
+   "block": "dms_reports",
+   "type": "u8",
+   "default": 15,
+   "min": 1,
+   "max": 60,
+   "unit": "min",
+   "title": "Time to confirm new firmware",
+   "help": "A new image counts as working only if the modem registered and a check-in succeeded within this time. Otherwise the bootloader restores the previous firmware.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 67,
+   "key": "dms_boot_report",
+   "group": "dms",
+   "block": "dms_reports",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Report every boot",
+   "help": "Send a check-in as soon as the network is up after start-up, carrying the reset reason. Without it, a device rebooting in a loop looks the same as one that is simply online.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 68,
+   "key": "dms_power_report",
+   "group": "dms",
+   "block": "dms_reports",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Report power loss",
+   "help": "When external power is cut, send one last message on backup battery before going quiet. This is what separates 'unplugged' from 'broken' - otherwise both look identical from the server.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 69,
+   "key": "dms_mqtt_port",
+   "group": "dms",
+   "block": "dms_server",
+   "type": "u16",
+   "default": 1883,
+   "min": 1,
+   "max": 65535,
+   "title": "DMS session port",
+   "help": "The MQTT port on the DMS host. In the on-demand mode the session is opened only for a check-in and closed again; in the always-connected mode it stays open. Only file downloads use the HTTP port.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 70,
+   "key": "selfboot_min",
+   "group": "health",
+   "block": "hl_recovery",
+   "type": "u16",
+   "default": 0,
+   "min": 0,
+   "max": 10080,
+   "unit": "min",
+   "title": "Scheduled self-reboot",
+   "help": "Reboot the device after this many minutes of uptime, at the next moment the ignition is off and the queue is empty. A belt over the watchdog's braces for a device nobody will visit. 0 = never.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 71,
+   "key": "modem_reset_min",
+   "group": "health",
+   "block": "hl_recovery",
+   "type": "u16",
+   "default": 240,
+   "min": 0,
+   "max": 1440,
+   "unit": "min",
+   "title": "Modem reset when not registered",
+   "help": "If the modem has not been registered on any network for this long, it is power-cycled. Cellular modems do wedge; this is the only remedy that needs no network. 0 = never.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 72,
+   "key": "dms_keepalive_min",
+   "group": "dms",
+   "block": "dms_schedule",
+   "type": "u8",
+   "default": 5,
+   "min": 1,
+   "max": 60,
+   "title": "Session keepalive, minutes",
+   "help": "How often the modem tells the server the session is still alive when nothing else is being said - two bytes each way, sent by the modem itself while the device sleeps. It has to be shorter than the carrier's idle timeout for TCP, which is typically many minutes; five is safe almost everywhere. Shorter costs data, longer risks a session the server has already forgotten.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 73,
+   "key": "dms_token",
+   "group": "dms",
+   "block": "dms_server",
+   "type": "str",
+   "len": 48,
+   "default": "",
+   "title": "Session token",
+   "help": "The credential this device presents when it opens its session, written by the production bench when the unit is built. A device with no token is let in on its IMEI until the server has one on record for it; once it has, the token is required.",
+   "access": "locked",
+   "secret": true,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 74,
+   "key": "gnss_radio_mode",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "gnss",
+     "label": "Receiver first (borrow the radio to send)"
+    },
+    {
+     "v": 2,
+     "name": "wwan",
+     "label": "Radio first (needs eDRX)"
+    }
+   ],
+   "title": "Receiver and radio sharing",
+   "help": "The modem's GNSS receiver and its LTE radio share one front end and take turns. Auto asks the network for eDRX and, if it is granted, lets the modem interleave the two by itself; if it is not, the receiver keeps the front end and the firmware borrows it for a moment whenever it has something to send, and opens a short listening window every few seconds for what the server may have sent. Force one mode only to test it: WWAN priority without eDRX means the receiver never runs.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 75,
+   "key": "gnss_listen_s",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u8",
+   "default": 15,
+   "min": 5,
+   "max": 120,
+   "title": "Listening window period, seconds",
+   "help": "In receiver-first mode the modem cannot hear the network while it is tracking satellites, so every this many seconds it stops for about two seconds to collect what the server sent. Shorter means a command reaches the device sooner; longer means fewer interruptions to the fix. Only used when the network did not grant eDRX.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 76,
+   "key": "gnss_assist",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Download satellite assistance data",
+   "help": "The receiver fetches a week of satellite orbits over the data link (about 25 kB, roughly once a week) so a cold start takes ten seconds instead of thirty, and a truck that sat for a night has a fix before it leaves the yard. Costs about 100 kB of data a month.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 77,
+   "key": "gnss_max_acc_m",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u16",
+   "default": 100,
+   "min": 0,
+   "max": 2000,
+   "title": "Maximum position error, metres",
+   "help": "The receiver estimates how far off each fix could be. A fix worse than this is not trusted: between buildings the receiver will happily report a position with a three-hundred-metre error and a good HDOP. 0 = do not check.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 78,
+   "key": "dms_session",
+   "group": "dms",
+   "block": "dms_schedule",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "enum": [
+    {
+     "v": 0,
+     "name": "on_demand",
+     "label": "Check in, then disconnect"
+    },
+    {
+     "v": 1,
+     "name": "always",
+     "label": "Stay connected"
+    }
+   ],
+   "title": "Management connection",
+   "help": "On demand opens the session to FlevioDMS only to check in - at start-up, every check-in period, on power loss, and when asked (SMS or server command CHECKIN) - stays a minute for tasks, and closes it. Nothing is sent in between: the least data. Stay connected keeps it open with a keepalive and presence pings, so tasks arrive within seconds, at a cost of several megabytes a month.",
+   "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 100,
+   "key": "movement_source",
+   "group": "tracking",
+   "block": "trk_sources",
+   "type": "enum",
+   "default": 4,
+   "min": 0,
+   "max": 4,
+   "enum": [
+    {
+     "v": 0,
+     "name": "ignition",
+     "label": "Ignition"
+    },
+    {
+     "v": 1,
+     "name": "accel",
+     "label": "Accelerometer"
+    },
+    {
+     "v": 2,
+     "name": "gnss",
+     "label": "GNSS"
+    },
+    {
+     "v": 3,
+     "name": "can",
+     "label": "CAN speed"
+    },
+    {
+     "v": 4,
+     "name": "speed",
+     "label": "Vehicle speed (bus, GNSS fallback)"
+    }
+   ],
+   "title": "Movement source",
+   "help": "What decides that the vehicle is moving. Vehicle speed is the right answer for a tracker that has both a bus and GNSS: it takes the speed from the bus when the bus is talking and from GNSS when it is not, and applies the start and stop thresholds below. The other sources pin the decision to one signal: Ignition uses the supply voltage, Accelerometer uses vibration and is the only choice on a vehicle with neither bus nor sky, GNSS and CAN speed use that one source and nothing else.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 101,
+   "key": "speed_source",
+   "group": "tracking",
+   "block": "trk_sources",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "gnss",
+     "label": "GNSS"
+    },
+    {
+     "v": 2,
+     "name": "can",
+     "label": "OBD / CAN"
+    }
+   ],
+   "title": "Speed source",
+   "help": "Auto takes speed from the bus when it is available and falls back to GNSS.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 102,
+   "key": "ignition_source",
+   "group": "tracking",
+   "block": "trk_sources",
+   "type": "enum",
+   "default": 3,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "voltage",
+     "label": "Power voltage"
+    },
+    {
+     "v": 1,
+     "name": "accel",
+     "label": "Accelerometer"
+    },
+    {
+     "v": 2,
+     "name": "rpm",
+     "label": "Engine RPM (CAN)"
+    },
+    {
+     "v": 3,
+     "name": "auto",
+     "label": "Automatic (engine RPM, voltage as fallback)"
+    }
+   ],
+   "title": "Ignition source",
+   "help": "What decides that the ignition is on. Automatic is the right answer for a tracker that may or may not have a bus: it uses engine RPM when the bus publishes it and the supply voltage when it does not. RPM is the better witness - an alternator on its way out can hold the rail below the threshold while the engine runs perfectly well - but a bus that has gone quiet reports nothing rather than zero, and falling back is the only safe reading. Accelerometer is for installs with neither a bus nor a reliable rail.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 103,
+   "key": "ign_on_mv",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "u32",
+   "default": 13300,
+   "min": 6000,
+   "max": 32000,
+   "unit": "mV",
+   "title": "Ignition ON voltage",
+   "help": "For a 12 V system. On a 24 V system the device doubles it, so this does not need changing - see Nominal system voltage.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 104,
+   "key": "ign_off_mv",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "u32",
+   "default": 12900,
+   "min": 6000,
+   "max": 32000,
+   "unit": "mV",
+   "title": "Ignition OFF voltage",
+   "help": "For a 12 V system, doubled on a 24 V one. Below the ON voltage on purpose: between the two nothing changes, which is what stops a tail lift or an air compressor pulling the rail down from looking like the driver switched off.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 105,
+   "key": "ign_on_s",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "u16",
+   "default": 5,
+   "min": 0,
+   "max": 300,
+   "unit": "s",
+   "title": "Ignition ON delay",
+   "help": "How long the ignition has to look on before it is believed. Short, because a start is unambiguous and the driver is waiting.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 106,
+   "key": "move_accel_mg",
+   "group": "tracking",
+   "block": "trk_movement",
+   "type": "u16",
+   "default": 60,
+   "min": 10,
+   "max": 1000,
+   "unit": "mg",
+   "title": "Movement threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 100,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 107,
+   "key": "move_start_s",
+   "group": "tracking",
+   "block": "trk_movement",
+   "type": "u16",
+   "default": 5,
+   "min": 0,
+   "max": 300,
+   "unit": "s",
+   "title": "Movement start delay",
+   "help": "How long the vehicle has to be above the start speed before movement is declared. This is what stops a single bad GNSS sample, a push on a trailer or a roll forward at a light from opening a trip.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 108,
+   "key": "move_stop_s",
+   "group": "tracking",
+   "block": "trk_movement",
+   "type": "u16",
+   "default": 90,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Movement stop delay",
+   "help": "How long the vehicle has to stay below the stop speed before it counts as stopped. Long on purpose: at 30 seconds a red light ends the trip and the next green starts a new one, which is how a day's driving turns into forty trips nobody can read.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 109,
+   "key": "move_start_kph",
+   "group": "tracking",
+   "block": "trk_movement",
+   "type": "u8",
+   "default": 8,
+   "min": 1,
+   "max": 50,
+   "unit": "km/h",
+   "title": "Movement start speed",
+   "help": "At or above this speed, held for the start delay, the vehicle is moving. The default of 8 km/h is 5 mph - fast enough that GNSS noise while parked never reaches it, slow enough to catch a truck pulling out of a yard.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 110,
+   "key": "gnss_min_sats",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u8",
+   "default": 4,
+   "min": 3,
+   "max": 12,
+   "title": "Minimum satellites for valid fix",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 111,
+   "key": "gnss_max_hdop",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u8",
+   "default": 20,
+   "min": 1,
+   "max": 50,
+   "title": "Maximum HDOP x 10",
+   "help": "20 means HDOP 2.0. Records with worse accuracy are marked invalid.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 112,
+   "key": "gnss_max_hdop_off",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u8",
+   "default": 15,
+   "min": 1,
+   "max": 50,
+   "title": "Maximum HDOP x 10 (engine off)",
+   "help": "A parked vehicle needs a tighter fix than a moving one.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 113,
+   "key": "gnss_fix_mode",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "enum",
+   "default": 2,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "any",
+     "label": "Any"
+    },
+    {
+     "v": 1,
+     "name": "fix2d",
+     "label": "2D"
+    },
+    {
+     "v": 2,
+     "name": "fix3d",
+     "label": "3D"
+    }
+   ],
+   "title": "Minimum GNSS fix mode",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 114,
+   "key": "heading_min_kph",
+   "group": "tracking",
+   "block": "trk_heading",
+   "type": "u8",
+   "default": 5,
+   "min": 0,
+   "max": 100,
+   "unit": "km/h",
+   "title": "Minimum speed for heading events",
+   "help": "Otherwise slow driving produces a stream of false turns.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 115,
+   "key": "heading_min_dist_m",
+   "group": "tracking",
+   "block": "trk_heading",
+   "type": "u16",
+   "default": 15,
+   "min": 0,
+   "max": 1000,
+   "unit": "m",
+   "title": "Minimum distance for heading events",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 116,
+   "key": "power_cut_delay_s",
+   "group": "tracking",
+   "block": "trk_power",
+   "type": "u16",
+   "default": 60,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Power cut report delay",
+   "help": "0 = report the power cut immediately.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 117,
+   "key": "batt_low_mv",
+   "group": "tracking",
+   "block": "trk_power",
+   "type": "u16",
+   "default": 3500,
+   "min": 3000,
+   "max": 4200,
+   "unit": "mV",
+   "title": "Backup battery low threshold",
+   "help": "After external power is lost, the device reports POWER_OFF - its last word - once the backup battery falls below this level.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 118,
+   "key": "dr_enabled",
+   "group": "tracking",
+   "block": "trk_dr",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Dead reckoning while the fix is lost",
+   "help": "In a tunnel or a covered yard the device keeps the position going from the vehicle bus distance and a heading estimated from lateral acceleration. Reckoned positions are marked as such on the wire (pos_src = 1) and carry the error radius the device believes in, so a server never mistakes one for a fix. Needs a decoded vehicle bus: there is no other source of distance.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 119,
+   "key": "dr_max_s",
+   "group": "tracking",
+   "block": "trk_dr",
+   "type": "u16",
+   "default": 300,
+   "min": 0,
+   "max": 900,
+   "unit": "s",
+   "title": "Longest stretch to reckon",
+   "help": "After this the device stops and the log honestly shows a gap. Five minutes is already generous; heading error grows the whole time and a reckoned position that nobody can bound is worse than none.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 120,
+   "key": "dr_max_err_m",
+   "group": "tracking",
+   "block": "trk_dr",
+   "type": "u16",
+   "default": 750,
+   "min": 50,
+   "max": 5000,
+   "unit": "m",
+   "title": "Error radius at which to give up",
+   "help": "The device estimates how wrong its reckoned position could be and stops once that passes this. The default sits just inside the half-mile an ELD record is allowed to be out by.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 121,
+   "key": "gnss_gate",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Refuse fixes the vehicle bus contradicts",
+   "help": "A receiver between buildings wanders hundreds of metres while the truck has not moved, and the odometer bills for it. With the bus reporting a standstill, that movement is drift and is thrown away. Also refuses a fix that implies a speed the vehicle plainly was not doing.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 122,
+   "key": "telem_groups",
+   "group": "tracking",
+   "block": "trk_telemetry",
+   "type": "u32",
+   "default": 1087,
+   "min": 0,
+   "max": 4294967295,
+   "title": "Vehicle telemetry groups to report",
+   "help": "A bit per group of vehicle signals: 0 engine, 1 temperatures, 2 pressures, 3 fuel, 4 aftertreatment, 5 warning lamps, 6 driveline, 7 switches, 8 air brakes, 9 weight and tyres, 10 electrical, 11 OBD2 mixture diagnostics, 12 service counters, 13 anything a newer vehicle database decodes that this firmware has no opinion about. The default 1087 is engine, temperatures, pressures, fuel, aftertreatment, warning lamps and electrical - what a fleet actually looks at. Left out by default: driveline, switches, air brakes, weight, OBD2 mixture diagnostics and service counters, which are for diagnosing one truck rather than running a hundred. A signal the vehicle database marks as required for an ELD is reported whatever this says.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 123,
+   "key": "telem_period_s",
+   "group": "tracking",
+   "block": "trk_telemetry",
+   "type": "u16",
+   "default": 300,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Vehicle telemetry period",
+   "help": "How often to write a full telemetry record while the vehicle bus is connected. 0 disables it. The ordinary tracking records keep speed, odometer, engine hours and rpm whatever this says - those are what an ELD needs - and everything else the bus publishes rides here instead. Longer is markedly cheaper: at 60 s of tracking, moving telemetry from every record to one every 600 s takes an hour of a talkative truck from about 3400 bytes to about 2500.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 124,
+   "key": "move_stop_kph",
+   "group": "tracking",
+   "block": "trk_movement",
+   "type": "u8",
+   "default": 3,
+   "min": 0,
+   "max": 50,
+   "unit": "km/h",
+   "title": "Movement stop speed",
+   "help": "Below this speed, held for the stop delay, the vehicle has stopped. It is deliberately lower than the start speed: with a single threshold a vehicle creeping in traffic at exactly that speed flips between moving and stopped on every sample, and each flip is a record and an event. The gap between the two is what makes the decision stable. Must stay below the start speed; the firmware clamps it if it is not.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 125,
+   "key": "ign_off_s",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "u16",
+   "default": 30,
+   "min": 0,
+   "max": 600,
+   "unit": "s",
+   "title": "Ignition OFF delay",
+   "help": "How long the ignition has to look off before it is believed. Much longer than the ON delay on purpose: cranking, a winch, a tail lift and a starter motor on a cold morning all briefly look like 'off' and all pass in well under this, while being half a minute late to notice a real switch-off costs nothing.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 126,
+   "key": "ign_rpm_min",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "u16",
+   "default": 200,
+   "min": 1,
+   "max": 5000,
+   "unit": "rpm",
+   "title": "Engine running RPM",
+   "help": "At or above this the engine counts as running. A threshold rather than a zero test because cranking passes through the low hundreds and is not yet running.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 127,
+   "key": "ign_system_v",
+   "group": "tracking",
+   "block": "trk_ignition",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "v12",
+     "label": "12 V"
+    },
+    {
+     "v": 2,
+     "name": "v24",
+     "label": "24 V"
+    }
+   ],
+   "title": "Nominal system voltage",
+   "help": "Automatic works it out from the supply and latches it, which is reliable because nothing a healthy vehicle produces falls between a charging 12 V system and a resting 24 V one. Pin it only if a particular installation gives the detector trouble. On a 24 V system both voltage thresholds are doubled; a 24 V truck judged by 12 V thresholds reads ignition-on all night, every night.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 130,
+   "key": "stop_min_period_s",
+   "group": "acq_stop",
+   "block": "acq_stop_main",
+   "type": "u32",
+   "default": 3600,
+   "min": 0,
+   "max": 86400,
+   "unit": "s",
+   "title": "Min period",
+   "help": "0 = write no records while parked at all.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 131,
+   "key": "stop_send_period_s",
+   "group": "acq_stop",
+   "block": "acq_stop_main",
+   "type": "u32",
+   "default": 3600,
+   "min": 0,
+   "max": 86400,
+   "unit": "s",
+   "title": "Send period",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 132,
+   "key": "stop_min_records",
+   "group": "acq_stop",
+   "block": "acq_stop_main",
+   "type": "u8",
+   "default": 1,
+   "min": 1,
+   "max": 32,
+   "title": "Min saved records",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 133,
+   "key": "volatile_ttl_s",
+   "group": "tracking",
+   "block": "trk_telemetry",
+   "type": "u16",
+   "default": 900,
+   "min": 0,
+   "max": 65535,
+   "unit": "s",
+   "title": "Discard perishable records older than",
+   "help": "Telemetry readings, heartbeats, poll answers and on-demand points are worth nothing once they are old: nobody needs to know what the coolant temperature was an hour ago, and while the record waits it costs ring space and airtime the trip history needs. Older than this they are discarded instead of delivered late. 0 keeps them forever. Nothing an ELD is required to keep is affected - the build refuses a catalogue where an essential event is also perishable.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 140,
+   "key": "move_min_period_s",
+   "group": "acq_move",
+   "block": "acq_move_rec",
+   "type": "u32",
+   "default": 60,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Min period",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 141,
+   "key": "move_min_dist_m",
+   "group": "acq_move",
+   "block": "acq_move_rec",
+   "type": "u32",
+   "default": 300,
+   "min": 0,
+   "max": 100000,
+   "unit": "m",
+   "title": "Min distance",
+   "help": "0 = do not use this criterion.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 142,
+   "key": "move_min_angle",
+   "group": "acq_move",
+   "block": "acq_move_rec",
+   "type": "u16",
+   "default": 30,
+   "min": 0,
+   "max": 180,
+   "unit": "deg",
+   "title": "Min angle",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 143,
+   "key": "move_min_speed_delta",
+   "group": "acq_move",
+   "block": "acq_move_rec",
+   "type": "u8",
+   "default": 15,
+   "min": 0,
+   "max": 200,
+   "unit": "km/h",
+   "title": "Min speed delta",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 144,
+   "key": "move_min_records",
+   "group": "acq_move",
+   "block": "acq_move_send",
+   "type": "u8",
+   "default": 1,
+   "min": 1,
+   "max": 32,
+   "title": "Min saved records",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 145,
+   "key": "move_send_period_s",
+   "group": "acq_move",
+   "block": "acq_move_send",
+   "type": "u32",
+   "default": 120,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Send period",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 150,
+   "key": "demand_enabled",
+   "group": "acq_demand",
+   "block": "acq_demand_main",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Enable on demand tracking",
+   "help": "Real-time mode on server command: record and send more often until the duration expires.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 151,
+   "key": "demand_period_s",
+   "group": "acq_demand",
+   "block": "acq_demand_main",
+   "type": "u16",
+   "default": 5,
+   "min": 1,
+   "max": 300,
+   "unit": "s",
+   "title": "Period",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 150,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 152,
+   "key": "demand_duration_min",
+   "group": "acq_demand",
+   "block": "acq_demand_main",
+   "type": "u16",
+   "default": 15,
+   "min": 1,
+   "max": 1440,
+   "unit": "min",
+   "title": "Duration",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 150,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 160,
+   "key": "accel_enabled",
+   "group": "accel",
+   "block": "beh_enable",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Enable driving behaviour",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 161,
+   "key": "harsh_accel_mg",
+   "group": "accel",
+   "block": "beh_harsh",
+   "type": "u16",
+   "default": 3500,
+   "min": 500,
+   "max": 10000,
+   "unit": "mg",
+   "title": "Harsh acceleration threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 160,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 162,
+   "key": "harsh_brake_mg",
+   "group": "accel",
+   "block": "beh_harsh",
+   "type": "u16",
+   "default": 4500,
+   "min": 500,
+   "max": 10000,
+   "unit": "mg",
+   "title": "Harsh braking threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 160,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 163,
+   "key": "harsh_corner_mg",
+   "group": "accel",
+   "block": "beh_harsh",
+   "type": "u16",
+   "default": 3500,
+   "min": 500,
+   "max": 10000,
+   "unit": "mg",
+   "title": "Harsh cornering threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 160,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 164,
+   "key": "harsh_duration_ms",
+   "group": "accel",
+   "block": "beh_harsh",
+   "type": "u16",
+   "default": 300,
+   "min": 50,
+   "max": 5000,
+   "unit": "ms",
+   "title": "Event duration",
+   "help": "How long the threshold must hold for an event to count. Shorter means more false positives on potholes.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 160,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 165,
+   "key": "harsh_min_kph",
+   "group": "accel",
+   "block": "beh_harsh",
+   "type": "u8",
+   "default": 10,
+   "min": 0,
+   "max": 100,
+   "unit": "km/h",
+   "title": "Minimum speed",
+   "help": "Below this speed driving events are not recorded.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 160,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 166,
+   "key": "crash_enabled",
+   "group": "accel",
+   "block": "beh_crash",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Crash detection",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 167,
+   "key": "crash_mg",
+   "group": "accel",
+   "block": "beh_crash",
+   "type": "u16",
+   "default": 12000,
+   "min": 2000,
+   "max": 16000,
+   "unit": "mg",
+   "title": "Crash threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 166,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 168,
+   "key": "crash_duration_ms",
+   "group": "accel",
+   "block": "beh_crash",
+   "type": "u16",
+   "default": 50,
+   "min": 5,
+   "max": 1000,
+   "unit": "ms",
+   "title": "Crash duration",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 166,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 169,
+   "key": "towing_enabled",
+   "group": "accel",
+   "block": "beh_towing",
+   "type": "bool",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "title": "Towing detection",
+   "help": "Movement with the ignition switched off.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 170,
+   "key": "towing_mg",
+   "group": "accel",
+   "block": "beh_towing",
+   "type": "u16",
+   "default": 100,
+   "min": 10,
+   "max": 1000,
+   "unit": "mg",
+   "title": "Towing threshold",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 169,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 171,
+   "key": "towing_delay_s",
+   "group": "accel",
+   "block": "beh_towing",
+   "type": "u16",
+   "default": 30,
+   "min": 5,
+   "max": 600,
+   "unit": "s",
+   "title": "Towing duration",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 169,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 172,
+   "key": "idling_enabled",
+   "group": "accel",
+   "block": "beh_idling",
+   "type": "bool",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "title": "Excessive idling detection",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 173,
+   "key": "idling_start_s",
+   "group": "accel",
+   "block": "beh_idling",
+   "type": "u16",
+   "default": 300,
+   "min": 60,
+   "max": 7200,
+   "unit": "s",
+   "title": "Time to report idling",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 172,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 174,
+   "key": "idle_rpm_max",
+   "group": "accel",
+   "block": "beh_idling",
+   "type": "u16",
+   "default": 1000,
+   "min": 0,
+   "max": 5000,
+   "title": "Idling RPM limit",
+   "help": "Above this engine speed idling is not counted (a PTO is running). 0 = do not check.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 172,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 175,
+   "key": "overspeed_enabled",
+   "group": "accel",
+   "block": "beh_speed",
+   "type": "bool",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "title": "Overspeeding detection",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 176,
+   "key": "overspeed_kph",
+   "group": "accel",
+   "block": "beh_speed",
+   "type": "u8",
+   "default": 110,
+   "min": 10,
+   "max": 200,
+   "unit": "km/h",
+   "title": "Speed limit",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 175,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 177,
+   "key": "overspeed_s",
+   "group": "accel",
+   "block": "beh_speed",
+   "type": "u16",
+   "default": 10,
+   "min": 1,
+   "max": 600,
+   "unit": "s",
+   "title": "Duration before event",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 175,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 180,
+   "key": "can_mode",
+   "group": "can",
+   "block": "can_bus",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic detection"
+    },
+    {
+     "v": 1,
+     "name": "obd2",
+     "label": "OBD2 only"
+    },
+    {
+     "v": 2,
+     "name": "j1939",
+     "label": "J1939 only"
+    },
+    {
+     "v": 3,
+     "name": "off",
+     "label": "Disabled"
+    }
+   ],
+   "title": "Bus mode",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 181,
+   "key": "can_channel",
+   "group": "can",
+   "block": "can_bus",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "can1",
+     "label": "CAN1 (pins 6/14)"
+    },
+    {
+     "v": 2,
+     "name": "can2",
+     "label": "CAN2 (pins 3/11)"
+    }
+   ],
+   "title": "Channel",
+   "help": "CAN1 is pins 6/14 of the OBD2 connector, CAN2 is pins 3/11 (J1939 through a 9-to-16 adapter).",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 182,
+   "key": "can_bitrate",
+   "group": "can",
+   "block": "can_bus",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "b250",
+     "label": "250 kbit/s"
+    },
+    {
+     "v": 2,
+     "name": "b500",
+     "label": "500 kbit/s"
+    }
+   ],
+   "title": "Bitrate",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 183,
+   "key": "can_poll_s",
+   "group": "can",
+   "block": "can_bus",
+   "type": "u8",
+   "default": 1,
+   "min": 1,
+   "max": 60,
+   "unit": "s",
+   "title": "Polling period",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 184,
+   "key": "can_safety_mode",
+   "group": "can",
+   "block": "can_bus",
+   "type": "enum",
+   "default": 1,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "listen",
+     "label": "Listen only"
+    },
+    {
+     "v": 1,
+     "name": "ign_on",
+     "label": "Active while ignition is on"
+    },
+    {
+     "v": 2,
+     "name": "always",
+     "label": "Always active"
+    }
+   ],
+   "title": "Bus safety mode",
+   "help": "Listen only never transmits anything onto the bus. It is the safest option, but the VIN and odometer cannot be requested.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 185,
+   "key": "vin_source",
+   "group": "can",
+   "block": "can_vin",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "obd2",
+     "label": "OBD2 Mode 09"
+    },
+    {
+     "v": 2,
+     "name": "j1939",
+     "label": "J1939 PGN 65260"
+    },
+    {
+     "v": 3,
+     "name": "manual",
+     "label": "Manual"
+    }
+   ],
+   "title": "VIN source",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 186,
+   "key": "vin_manual",
+   "group": "can",
+   "block": "can_vin",
+   "type": "str",
+   "len": 17,
+   "default": "",
+   "title": "VIN",
+   "help": "Needed when the vehicle does not publish its VIN on the bus - an ELD cannot work without one.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 185,
+    "value": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 187,
+   "key": "odo_source",
+   "group": "can",
+   "block": "can_counters",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "can",
+     "label": "CAN only"
+    },
+    {
+     "v": 2,
+     "name": "gnss",
+     "label": "GNSS only"
+    }
+   ],
+   "title": "Odometer source",
+   "help": "Light vehicles often have no odometer on the bus - then distance is counted by GNSS starting from the given offset.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 188,
+   "key": "odo_offset_m",
+   "group": "can",
+   "block": "can_counters",
+   "type": "u64",
+   "default": 0,
+   "min": 0,
+   "max": 9999999999,
+   "unit": "m",
+   "title": "Odometer offset",
+   "help": "The vehicle's odometer reading at the time of installation.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 189,
+   "key": "hours_source",
+   "group": "can",
+   "block": "can_counters",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "auto",
+     "label": "Automatic"
+    },
+    {
+     "v": 1,
+     "name": "can",
+     "label": "CAN only"
+    },
+    {
+     "v": 2,
+     "name": "calc",
+     "label": "Calculated"
+    }
+   ],
+   "title": "Engine hours source",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 190,
+   "key": "hours_offset_s",
+   "group": "can",
+   "block": "can_counters",
+   "type": "u32",
+   "default": 0,
+   "min": 0,
+   "max": 4000000000,
+   "unit": "s",
+   "title": "Engine hours offset",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 191,
+   "key": "odo_gps_mode",
+   "group": "can",
+   "block": "can_counters",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "engine",
+     "label": "Only while engine is running"
+    },
+    {
+     "v": 1,
+     "name": "always",
+     "label": "Always"
+    },
+    {
+     "v": 2,
+     "name": "never_override",
+     "label": "Never override ECU odometer"
+    }
+   ],
+   "title": "GPS odometer mode",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 200,
+   "key": "ble_enabled",
+   "group": "ble",
+   "block": "ble_radio",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Enable Bluetooth",
+   "help": "The driver application connects over BLE to see live telemetry. Turning this off closes the only radio on the device a person can reach from outside the truck.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 201,
+   "key": "ble_name",
+   "group": "ble",
+   "block": "ble_radio",
+   "type": "str",
+   "len": 20,
+   "default": "",
+   "title": "Advertised name",
+   "help": "What the driver sees in the application's device list. Empty means FLEVIO- and the last five digits of the serial number - the number on the label, which is what an installer has in front of them. A board with no serial yet uses the tail of its Bluetooth address.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 202,
+   "key": "ble_period_ms",
+   "group": "ble",
+   "block": "ble_app",
+   "type": "u32",
+   "default": 1000,
+   "min": 200,
+   "max": 3600000,
+   "unit": "ms",
+   "title": "Telemetry period",
+   "help": "How often the live telemetry frame is pushed to the connected application. One second is what a speedometer needs, and a period this short costs nothing: the device is on vehicle power and the phone is in the cab. Raise it when the application only draws a map.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 203,
+   "key": "ble_pin",
+   "group": "ble",
+   "block": "ble_radio",
+   "type": "u32",
+   "default": 0,
+   "min": 0,
+   "max": 999999,
+   "title": "Pairing PIN",
+   "help": "Six digits the driver types once to pair. 0 means any phone in range may connect and read telemetry - acceptable in a locked cab, less so on a yard truck.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 204,
+   "key": "ble_cmd_enabled",
+   "group": "ble",
+   "block": "ble_app",
+   "type": "bool",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "title": "Accept commands over Bluetooth",
+   "help": "Lets the application send the same commands as SMS and the server channel. The configuration password is still required, so this widens who can reach the device, not who can change it.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 211,
+   "key": "led_enabled",
+   "group": "io",
+   "block": "io_indication",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Status LED",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 212,
+   "key": "led_night_off",
+   "group": "io",
+   "block": "io_indication",
+   "type": "bool",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "title": "LED off when ignition is off",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 211,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 220,
+   "key": "event_mask_1",
+   "group": "events",
+   "block": "ev_server",
+   "type": "u32",
+   "default": 1740373119,
+   "min": 0,
+   "max": 4294967295,
+   "title": "Server events - mask 1",
+   "help": "Which events with codes 0..31 are sent to the data server. A cleared bit suppresses transmission entirely - this is the main lever for cutting traffic. Events marked essential in the event list (ignition, movement, power, VIN, bus) are always sent whatever this mask says: an ELD record with those missing is not a record.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 221,
+   "key": "event_mask_2",
+   "group": "events",
+   "block": "ev_server",
+   "type": "u32",
+   "default": 4128831,
+   "min": 0,
+   "max": 4294967295,
+   "title": "Server events - mask 2",
+   "help": "Codes 32..63. Essential events are always sent.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 226,
+   "key": "ble_mask_1",
+   "group": "events",
+   "block": "ev_ble",
+   "type": "u32",
+   "default": 1614019686,
+   "min": 0,
+   "max": 4294967295,
+   "title": "BLE events - mask 1",
+   "help": "Which events are pushed to the driver application over Bluetooth. Codes 0-31. The default is what a driver can act on: the key, the start and end of movement, speeding, idling, harsh driving, a crash, power and the GNSS fix. The periodic codes are deliberately absent - they are the telemetry stream on its own characteristic, and sending them here as well would deliver every frame twice.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 227,
+   "key": "ble_mask_2",
+   "group": "events",
+   "block": "ev_ble",
+   "type": "u32",
+   "default": 786495,
+   "min": 0,
+   "max": 4294967295,
+   "title": "BLE events - mask 2",
+   "help": "Codes 32-63. The default is what the vehicle itself says: the VIN, the bus coming and going, the check engine lamp and a new fault code. The rest of this range is housekeeping the cab does not need.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  }
+ ],
+ "events": [
+  {
+   "code": 0,
+   "name": "POWER_UP",
+   "label": "Device power up",
+   "essential": true,
+   "perishable": false,
+   "bit": 0,
+   "mask": 220,
+   "help": "The device started. The record says why (power-on, watchdog, panic, software) so a device that reboots in a loop is visible from the server."
+  },
+  {
+   "code": 1,
+   "name": "IGN_ON",
+   "label": "Ignition ON",
+   "essential": true,
+   "perishable": false,
+   "bit": 1,
+   "mask": 220
+  },
+  {
+   "code": 2,
+   "name": "IGN_OFF",
+   "label": "Ignition OFF",
+   "essential": true,
+   "perishable": false,
+   "bit": 2,
+   "mask": 220
+  },
+  {
+   "code": 3,
+   "name": "ON_PERIODIC",
+   "label": "Periodic (ignition on)",
+   "essential": false,
+   "perishable": false,
+   "bit": 3,
+   "mask": 220
+  },
+  {
+   "code": 4,
+   "name": "OFF_PERIODIC",
+   "label": "Periodic (ignition off)",
+   "essential": false,
+   "perishable": false,
+   "bit": 4,
+   "mask": 220
+  },
+  {
+   "code": 5,
+   "name": "TRIP_START",
+   "label": "Trip started",
+   "essential": true,
+   "perishable": false,
+   "bit": 5,
+   "mask": 220,
+   "help": "The vehicle has been at or above move_start_kph for move_start_s. See docs/MOVEMENT.md for why that is two thresholds and two timers rather than one of each."
+  },
+  {
+   "code": 6,
+   "name": "TRIP_STOP",
+   "label": "Trip ended",
+   "essential": true,
+   "perishable": false,
+   "bit": 6,
+   "mask": 220,
+   "help": "The vehicle has been at or below move_stop_kph for move_stop_s. The stop timer is long on purpose - at thirty seconds a red light ends the trip and the next green starts another one."
+  },
+  {
+   "code": 10,
+   "name": "SPEEDING",
+   "label": "Overspeeding started",
+   "essential": false,
+   "perishable": false,
+   "bit": 10,
+   "mask": 220
+  },
+  {
+   "code": 11,
+   "name": "SPEEDING_END",
+   "label": "Overspeeding ended",
+   "essential": false,
+   "perishable": false,
+   "bit": 11,
+   "mask": 220
+  },
+  {
+   "code": 12,
+   "name": "IDLING",
+   "label": "Excessive idling started",
+   "essential": false,
+   "perishable": false,
+   "bit": 12,
+   "mask": 220
+  },
+  {
+   "code": 13,
+   "name": "IDLING_END",
+   "label": "Idling ended",
+   "essential": false,
+   "perishable": false,
+   "bit": 13,
+   "mask": 220
+  },
+  {
+   "code": 14,
+   "name": "HARDACCEL",
+   "label": "Harsh acceleration",
+   "essential": false,
+   "perishable": false,
+   "bit": 14,
+   "mask": 220
+  },
+  {
+   "code": 15,
+   "name": "HARDBRAKE",
+   "label": "Harsh braking",
+   "essential": false,
+   "perishable": false,
+   "bit": 15,
+   "mask": 220
+  },
+  {
+   "code": 16,
+   "name": "HARDTURN",
+   "label": "Harsh cornering",
+   "essential": false,
+   "perishable": false,
+   "bit": 16,
+   "mask": 220
+  },
+  {
+   "code": 17,
+   "name": "SHOCK",
+   "label": "Crash / high-G impact",
+   "essential": true,
+   "perishable": false,
+   "bit": 17,
+   "mask": 220
+  },
+  {
+   "code": 19,
+   "name": "TOWING",
+   "label": "Movement with ignition off",
+   "essential": false,
+   "perishable": false,
+   "bit": 19,
+   "mask": 220
+  },
+  {
+   "code": 20,
+   "name": "POWER_CUT",
+   "label": "External power cut",
+   "essential": true,
+   "perishable": false,
+   "bit": 20,
+   "mask": 220
+  },
+  {
+   "code": 21,
+   "name": "POWER_RESTORE",
+   "label": "External power restored",
+   "essential": true,
+   "perishable": false,
+   "bit": 21,
+   "mask": 220
+  },
+  {
+   "code": 23,
+   "name": "POWER_OFF",
+   "label": "Device shutting down",
+   "essential": true,
+   "perishable": false,
+   "bit": 23,
+   "mask": 220
+  },
+  {
+   "code": 24,
+   "name": "HEARTBEAT",
+   "label": "Heartbeat",
+   "essential": false,
+   "perishable": true,
+   "bit": 24,
+   "mask": 220
+  },
+  {
+   "code": 25,
+   "name": "POLL",
+   "label": "Response to server poll",
+   "essential": false,
+   "perishable": true,
+   "bit": 25,
+   "mask": 220
+  },
+  {
+   "code": 26,
+   "name": "LIVE",
+   "label": "On demand tracking point",
+   "essential": false,
+   "perishable": true,
+   "bit": 26,
+   "mask": 220
+  },
+  {
+   "code": 27,
+   "name": "TELEMETRY",
+   "label": "Vehicle telemetry",
+   "essential": false,
+   "perishable": true,
+   "bit": 27,
+   "mask": 220,
+   "help": "Everything the vehicle bus publishes, on its own slower schedule. The ordinary tracking records carry only what an ELD needs from the bus - speed, odometer, engine hours, rpm - so a minute-by-minute trip does not pay for coolant temperature and DEF level sixty times an hour. Period in telem_period_s; switch this event off and no telemetry record is written at all."
+  },
+  {
+   "code": 29,
+   "name": "GNSS_LOST",
+   "label": "GNSS fix lost",
+   "essential": false,
+   "perishable": false,
+   "bit": 29,
+   "mask": 220
+  },
+  {
+   "code": 30,
+   "name": "GNSS_OK",
+   "label": "GNSS fix restored",
+   "essential": false,
+   "perishable": false,
+   "bit": 30,
+   "mask": 220
+  },
+  {
+   "code": 32,
+   "name": "VIN",
+   "label": "VIN read or changed",
+   "essential": true,
+   "perishable": false,
+   "bit": 0,
+   "mask": 221
+  },
+  {
+   "code": 33,
+   "name": "BUS_CONNECTED",
+   "label": "Vehicle bus connected",
+   "essential": true,
+   "perishable": false,
+   "bit": 1,
+   "mask": 221
+  },
+  {
+   "code": 34,
+   "name": "BUS_LOST",
+   "label": "Moving without ECU data",
+   "essential": true,
+   "perishable": false,
+   "bit": 2,
+   "mask": 221,
+   "help": "The equivalent of BUSMALF: the vehicle is moving but no bus data arrives - for an ELD this indicates a malfunction."
+  },
+  {
+   "code": 35,
+   "name": "MIL_ON",
+   "label": "Check engine lamp ON",
+   "essential": false,
+   "perishable": false,
+   "bit": 3,
+   "mask": 221
+  },
+  {
+   "code": 36,
+   "name": "MIL_OFF",
+   "label": "Check engine lamp OFF",
+   "essential": false,
+   "perishable": false,
+   "bit": 4,
+   "mask": 221
+  },
+  {
+   "code": 37,
+   "name": "DTC_NEW",
+   "label": "New fault code",
+   "essential": false,
+   "perishable": false,
+   "bit": 5,
+   "mask": 221
+  },
+  {
+   "code": 48,
+   "name": "BLE_CONN",
+   "label": "Driver app connected over BLE",
+   "essential": false,
+   "perishable": false,
+   "bit": 16,
+   "mask": 221
+  },
+  {
+   "code": 49,
+   "name": "BLE_DISCONN",
+   "label": "Driver app disconnected",
+   "essential": false,
+   "perishable": false,
+   "bit": 17,
+   "mask": 221
+  },
+  {
+   "code": 50,
+   "name": "CFG_CHANGED",
+   "label": "Configuration changed",
+   "essential": true,
+   "perishable": false,
+   "bit": 18,
+   "mask": 221,
+   "help": "The configuration was written - from the configurator, the driver application, the server, SMS or FlevioDMS. The record carries the new revision so a server can line up a change of behaviour with the change that caused it."
+  },
+  {
+   "code": 51,
+   "name": "FW_UPDATED",
+   "label": "Firmware updated",
+   "essential": true,
+   "perishable": false,
+   "bit": 19,
+   "mask": 221,
+   "help": "First boot of a new firmware image. The record carries the version."
+  },
+  {
+   "code": 52,
+   "name": "DOUT_CHANGED",
+   "label": "Output switched",
+   "essential": false,
+   "perishable": false,
+   "bit": 20,
+   "mask": 221,
+   "help": "An output (relay) changed state - on a command from the server, FlevioDMS or SMS, or when a request held until the vehicle stopped was applied. The record carries the new state of every output."
+  },
+  {
+   "code": 53,
+   "name": "DIN_CHANGED",
+   "label": "Input changed",
+   "essential": false,
+   "perishable": false,
+   "bit": 21,
+   "mask": 221,
+   "help": "A digital input changed level and held it for three seconds: a door, a panic button, a PTO switch. The record carries every input."
+  }
+ ]
+}

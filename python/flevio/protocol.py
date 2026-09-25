@@ -77,6 +77,11 @@ PRIORITY_NAMES = {0: "low", 1: "high", 2: "panic"}
 
 # Element ids at or above this carry a string rather than a number.
 IO_STRING_MIN = 250
+# One of them carries a 16-bit element id inside it: the extended elements
+# (wired inputs, sensors, Bluetooth sensors...). See ``Record.ext``.
+IO_EXT = 254
+# Set on an extended id: the value is bytes, not a number.
+EXT_BLOB = 0x8000
 
 # The device never sends a payload larger than this, and neither should you.
 PAYLOAD_MAX = 1380
@@ -298,6 +303,10 @@ class Record:
     sats: Optional[int] = None
     hdop: Optional[float] = None
     io: Dict[int, Union[int, str]] = field(default_factory=dict)
+    # Extended elements: ``ext_id -> int``, or ``bytes`` when bit 15 of the
+    # id is set (a MAC, a driver's key). ``flevio.catalog.ext_name`` names
+    # them. Empty on a device that has nothing of the kind to say.
+    ext: Dict[int, Union[int, bytes]] = field(default_factory=dict)
     delta: bool = False                       # how it arrived, for diagnostics
 
     @property
@@ -364,13 +373,37 @@ def decode_record(buf: bytes, off: int, prev: Optional[Record]) -> Tuple[Record,
     # Elements. A delta record starts from its predecessor's set, applies
     # what changed, then removes what is gone.
     io: Dict[int, Union[int, str]] = dict(prev.io) if delta and prev else {}
+    ext: Dict[int, Union[int, bytes]] = dict(prev.ext) if delta and prev else {}
     n, p = get_varint(buf, p)
     for _ in range(n):
         if p >= len(buf):
             raise DecodeError("element runs past the end")
         io_id = buf[p]
         p += 1
-        if io_id >= IO_STRING_MIN:
+        if io_id == IO_EXT:
+            # An extended element: u8 len, varint ext_id, then a zigzag
+            # number or raw bytes to the end of len. An ext_id with nothing
+            # after it is a tombstone - in a delta record, "this one is
+            # gone". A decoder that does not know 254 skips it as a string,
+            # which is why the extension costs nobody an upgrade.
+            if p >= len(buf):
+                raise DecodeError("extended element runs past the end")
+            ln = buf[p]
+            p += 1
+            body = buf[p:p + ln]
+            if len(body) != ln:
+                raise DecodeError("extended element body runs past the end")
+            p += ln
+            ext_id, q = get_varint(body, 0)
+            if ext_id == 0 or ext_id > 0xFFFF:
+                raise DecodeError("extended element id out of range")
+            if q == len(body):
+                ext.pop(ext_id, None)
+            elif ext_id & EXT_BLOB:
+                ext[ext_id] = bytes(body[q:])
+            else:
+                ext[ext_id], _ = get_svarint(body, q)
+        elif io_id >= IO_STRING_MIN:
             io[io_id], p = get_str8(buf, p)
         else:
             io[io_id], p = get_svarint(buf, p)
@@ -382,6 +415,7 @@ def decode_record(buf: bytes, off: int, prev: Optional[Record]) -> Tuple[Record,
             io.pop(buf[p], None)
             p += 1
     rec.io = io
+    rec.ext = ext
     return rec, p
 
 
@@ -397,6 +431,10 @@ class Hello:
     serial: str
     fw: str
     cfg_revision: int
+    # Version 2 - what the unit is. Empty on a version 1 HELLO.
+    model: str = ""          # "FE-OT100", "FE-ST-50"
+    hw: str = ""             # the board revision, "rev0.3"
+    caps: str = ""           # "gnss,lte-m,ble,can2,...": what it can produce
 
 
 def decode_hello(payload: bytes) -> Hello:
@@ -407,7 +445,12 @@ def decode_hello(payload: bytes) -> Hello:
     serial, p = get_str8(payload, p)
     fw, p = get_str8(payload, p)
     rev, p = get_varint(payload, p)
-    return Hello(ver, bool(flags & HELLO_F_ACK), imei, serial, fw, rev)
+    model = hw = caps = ""
+    if ver >= 2 and p < len(payload):
+        model, p = get_str8(payload, p)
+        hw, p = get_str8(payload, p)
+        caps, p = get_str8(payload, p)
+    return Hello(ver, bool(flags & HELLO_F_ACK), imei, serial, fw, rev, model, hw, caps)
 
 
 @dataclass

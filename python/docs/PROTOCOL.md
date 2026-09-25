@@ -56,13 +56,17 @@ skipped byte by byte until the next 0xF2 that starts a valid frame;
 
 | kind | name  | direction | payload |
 |------|-------|-----------|---------|
-| 0x01 | HELLO | device → server | `u8 version=1`, `u8 flags` (bit0: the device expects ACKs), `str8 imei`, `str8 serial`, `str8 fw`, `varint cfg_revision` |
+| 0x01 | HELLO | device → server | `u8 version` (2), `u8 flags` (bit0: the device expects ACKs), `str8 imei`, `str8 serial`, `str8 fw`, `varint cfg_revision`; version 2 adds `str8 model`, `str8 hw`, `str8 caps` (see *HELLO version 2*) |
 | 0x02 | DATA  | device → server | `u16 seq`, `u8 flags` (bit0: `str8 imei` follows), `u8 count`, records |
 | 0x03 | PING  | device → server | empty; keepalive on an idle TCP socket |
 | 0x04 | REPLY | device → server | `u16 cmd_id`, text (the rest of the payload) |
 | 0x81 | ACK   | server → device | `u16 seq`, `u8 accepted` |
 | 0x82 | CMD   | server → device | `u16 cmd_id`, text |
 | 0x83 | TIME  | server → device | `i64 unix_ms` |
+
+Kinds 0x05-0x0F (device → server) and 0x84-0x8F (server → device) are
+reserved for later - a binary upload such as a photo or a bus capture, a
+binary download. A frame of a kind you do not know is skipped by its length.
 
 `str8` is a length byte followed by that many bytes, no terminator.
 
@@ -99,14 +103,62 @@ record in a TCP connection that dies mid-flight is lost.
 DATA frame carries the IMEI (flags bit0). One frame per datagram.
 
 Commands from the server run through the same parser as SMS commands. The
-text is `[config_password] VERB
-args`; without the password it runs at the user level. The reply carries the
-same `cmd_id` so the server can match them up; a command that reboots the
-device (`RESET`) is replied to before the reboot.
+text is `[config_password] VERB args`; without the password it runs at the
+user level. The reply carries the same `cmd_id` so the server can match them
+up; a command that reboots the device (`RESET`) is replied to before the
+reboot. *Commands and settings* below lists them.
+
+Switching things is a command too: `SETOUT 1 ON` closes output 1 and `SETOUT
+1 OFF SAFE` opens it once the vehicle has been still for five seconds - the
+form an immobiliser should always be driven in. The reply says what happened
+now; the `DOUT_CHANGED` record (event 52) says when the relay actually moved,
+and every record carries the state of every output as extended element
+`dout<n>` (and every input as `din<n>`, with `DIN_CHANGED`, event 53, when
+one moves), so the server's picture of the relay never depends on having
+seen the reply. `SETOUT` needs the password on this channel.
 
 `TIME` is a courtesy for a device that has neither a fix nor a network clock
 yet; it is ignored once either exists. Send it after the HELLO if you send it
 at all.
+
+### The conversation over MQTT
+
+With `srv1_protocol = 2` (mqtt) the device does not open a socket of its own:
+it connects to the customer's broker (`srv1_host`, `srv1_port`, usually 8883)
+and carries the very same frames as MQTT messages under a topic prefix
+(`srv1_topic`, param 39, default `flevio`):
+
+```
+    <prefix>/<imei>/hello    HELLO frame, retained: who the unit is
+    <prefix>/<imei>/status   "online", retained; "offline" is the last will
+    <prefix>/<imei>/data     DATA frames, QoS 1, one frame per message
+    <prefix>/<imei>/cmd      subscribed: a command as plain text or a CMD frame
+    <prefix>/<imei>/reply    the answer: text for text, a REPLY frame for a frame
+```
+
+* The client id is the IMEI; `srv1_user` / `srv1_password` (params 37, 38)
+  are the broker's.
+* There is no ACK frame. A DATA message is delivered when the broker
+  acknowledges it (PUBACK, QoS 1); that is the receipt the device waits for.
+  The broker - and whatever subscribes to it with a persistent session - is
+  then responsible for not losing it.
+* No PING either: the session is kept alive at `srv1_keepalive_s`.
+* HELLO is published once per session, retained, so a subscriber that
+  starts later still learns what the unit is.
+* Each message holds exactly one frame and each DATA frame is
+  self-contained (delta records refer only to the record before them in the
+  same frame), so a subscriber decodes a message on its own.
+* Delivery is at least once: a DATA frame whose receipt the device did not
+  see comes again. Store records idempotently - unique on (imei, ts, event).
+* Commands are taken at QoS 0 and the broker does not hold them for a
+  device that is offline. A command for a device that may be away belongs in
+  a queue on the server, sent when `status` says `online` and matched to its
+  REPLY by `cmd_id` - `flevio/cmdqueue.py` and `examples/mqtt_server.py` do
+  exactly that.
+* TLS (`srv1_tls`, param 36): 0 off, 1 encrypted, 2 encrypted and the
+  broker's certificate checked against the authorities built into the
+  firmware - a handful of the public roots that sign most cloud brokers.
+* The second server (`srv2_*`, params 43-47) can be a broker too.
 
 ## Records
 
@@ -155,6 +207,13 @@ estimated heading - carries element 244 (`pos_src`) = 1 and element 243
 has no altitude and no satellite count, because there are none. Do not draw
 one as though it were a fix, and for an ELD treat the record as only as good
 as the radius attached to it.
+
+Not every element in a record is a fresh reading. A signal is reported at
+the value the server already has until the real one moves past the deadband
+its vehicle-database entry gives it - which the delta coder then writes as
+nothing at all. A server sees a step function at the resolution somebody
+asked for, not a smoothed or interpolated value, and never a reading older
+than 60 seconds.
 
 The unit of every element is fixed by its id; `flevio.catalog.IO` is the
 full list, with the scale and offset that turn the wire integer back into a
@@ -209,6 +268,168 @@ about 120 in the old format. A batch of twelve one-minute points on the
 highway is roughly 94 + 11 × 28 + 10 ≈ 410 bytes on the wire, including the
 VIN and serial in every record (`periodic_identity = 1`) - the strings cost
 only in the keyframe.
+
+### Extended elements
+
+The byte-wide id is the right size for what a vehicle bus says and the wrong
+size for everything else a tracker grows: wired inputs and outputs, 1-Wire
+and RS-485 sensors, a dozen Bluetooth sensors with six readings each. Rather
+than a second codec, one id carries a 16-bit space inside it:
+
+```
+ u8      254        the extended-element id
+ u8      len        of everything that follows, as for any string element
+ varint  ext_id     which element (table below)
+ ...                zigzag varint value - or, when bit 15 of ext_id is set,
+                    raw bytes to the end of len
+```
+
+Every decoder written before this existed already handles it: 254 is in the
+string range, so it reads `len` and skips. A record may carry any number of
+them; each `ext_id` is one element and is delta-coded like any other - sent
+when it appears or changes, silent while it does not. In a delta record an
+extended element the previous record had and this one has not is written as
+a **tombstone**: id 254, `len` covering only the `ext_id`, nothing after it.
+An old decoder skips that too. The byte-wide removal list at the end of a
+delta record never names 254.
+
+Bit 15 of `ext_id` (`0x8000`) says the value is bytes rather than a number;
+a MAC address, a driver's key, a raw advertisement. Everything else is an
+integer in the unit named, fractions scaled rather than rounded. Ids below
+60000 are assigned in `proto.h`; 60000-65535 are for a customer's own use
+and Flevio never assigns them.
+
+| ext_id | name | value |
+|--------|------|-------|
+| 1001-1008 | `din1`..`din8` | digital input, 0/1 |
+| 1011-1018 | `dout1`..`dout8` | output, the commanded state 0/1 |
+| 1021-1028 | `ain1`..`ain8` | analogue input, mV |
+| 1031-1034 | `pulse1`..`pulse4` | pulse counter, lifetime count |
+| 1041-1042 | `freq1`..`freq2` | frequency input, Hz x10 |
+| 1100 (bytes) | `driver_id` | the key or card as presented: 8-byte iButton, RFID uid, BLE card id |
+| 1101 | `driver_id_kind` | 1 iButton, 2 RFID, 3 BLE card, 4 keypad |
+| 1102 | `driver_auth` | 0 unknown, 1 authorised, 2 rejected |
+| 1111-1118 | `temp1`..`temp8` | 1-Wire thermometer, degC x100, signed |
+| 1121-1128 (bytes) | `temp_id1`..`temp_id8` | its 8-byte ROM id, on the first record it appears in |
+| 1201-1204 | `fuel_level1`..`4` | RS-485 level sensor, in the unit its calibration gives, x10 |
+| 1211-1214 | `fuel_temp1`..`4` | degC |
+| 1221-1224 | `fuel_raw1`..`4` | the sensor's raw count, for calibration |
+| 1231-1234 | `axle_load1`..`4` | kg |
+| 1240 | `tacho_state` | tachograph driver state as the unit reports it |
+| 1241 (bytes) | `tacho_card` | driver card number |
+| 1301-1307 | `cell_mcc`, `cell_mnc`, `cell_tac`, `cell_id`, `cell_rsrp` (dBm), `cell_rsrq` (dB x10), `cell_rat` (1 LTE-M, 2 NB-IoT, 3 GSM) | where the device was when it had no fix |
+| 1310 (bytes) | `cell_iccid` | |
+| 1351 | `gnss_acc_m` | the receiver's own error estimate, metres, in 5 m steps |
+| 1352 | `gnss_fix_age_s` | how old the position in the header is |
+| 1353 | `gnss_jamming` | 0/1 |
+| 1354 | `gnss_sats_view` | satellites in view (used are in the header) |
+| 1355 | `gnss_ttff_s` | on the first fix of a boot |
+| 1356 | `gnss_alt_acc_m` | |
+| 1401-1405 | `dev_temp_c`, `dev_heap_free`, `dev_modem_resets`, `dev_uptime_s`, `dev_queue` | device health |
+| 1410, 1411 (bytes) | `dev_hw_rev`, `dev_model` | on `POWER_UP` |
+| 1451, 1452 | `geofence_id`, `geofence_state` (1 entered, 2 left) | |
+| 1461-1465 | `trip_id`, `trip_distance_m`, `trip_duration_s`, `trip_idle_s`, `trip_max_kph` | on `TRIP_STOP` |
+| 1501 (bytes), 1502 | `media_id`, `media_kind` (1 photo, 2 clip, 3 bus capture, 4 audio) | a reference to something uploaded another way |
+| 2000 + 32·slot + n | `ble<slot>_...` | Bluetooth sensors, below |
+| 4000-7999 | `vdb<n>` | vehicle-database signals beyond ids 100-199, assigned by the database |
+| 60000-65535 | `private<n>` | yours |
+
+**Bluetooth sensors** have thirty-two slots of thirty-two ids each; a slot is
+one sensor the device was told to listen for (or found, when allowed). Its
+MAC goes out on the first record it appears in and then only when it
+changes, like any other element. Which fields a slot carries depends on the
+sensor; an absent field means the sensor has no such reading, not zero.
+
+| +n | name | value |
+|----|------|-------|
+| 0 (bytes) | `mac` | 6 bytes |
+| 1 | `rssi` | dBm, negative |
+| 2, 3 | `batt_pct`, `batt_mv` | |
+| 4 | `temp` | degC x100, signed |
+| 5 | `humidity` | % x10 |
+| 6 | `pressure` | hPa x10 |
+| 7 | `lux` | |
+| 8 | `magnet` | door: 0 closed, 1 open |
+| 9, 10 | `moving`, `move_count` | |
+| 11, 12 | `pitch`, `roll` | degrees, signed |
+| 13, 14 | `flags`, `custom` | sensor-defined |
+| 15 (bytes) | `adv` | the raw advertisement, for a sensor nobody has decoded yet |
+| 16 (bytes) | `name` | |
+| 17 | `kind` | what the device took it for: 1 beacon, 2 thermometer, 3 door, 4 fuel cap, 5 tyre, 6 custom |
+| 18 | `age_s` | seconds since it was last heard |
+| 19 | `tpms_kpa` | tyre pressure |
+| 20 | `fuel_pct` | % x10 |
+
+A device says which of these it can produce in its capability list (HELLO
+version 2 and the `caps` line of `cfg info`): `din1`, `ain1`, `dout1`,
+`ble-sensors`, `1wire`, `rs485`. A server that stores records from several
+models therefore knows, per unit, which extended ids can ever arrive.
+
+The decoder returns them as `Record.ext`, a dictionary from `ext_id` to
+`int` or `bytes`; `catalog.ext_name()` names them, `catalog.describe_ext()`
+prints one, `catalog.decode_ext()` turns the whole dictionary into
+JSON-ready `{name: value}`.
+
+### HELLO version 2
+
+Version 2 appends three `str8` fields after `cfg_revision`: `model`
+(`FE-OT100`, `FE-ST-50`), `hw` (the board revision the production bench
+wrote into the unit, `rev0.3`) and `caps` (the capability list, comma
+separated). A decoder written for version 1 reads the fields it always did
+and ignores the rest; a decoder for version 2 reads them when `version >= 2`
+and there are bytes left.
+
+## Commands and settings
+
+A command is text, the same on every channel - the server (CMD frame, or the
+MQTT `cmd` topic), SMS and the device's console. The ones a server uses most:
+
+| command | answer |
+|---|---|
+| `GETSTATUS` | ignition, movement, signal, satellites, voltages, queue, server link |
+| `GETINFO` | model, firmware, IMEI, serial, SIM |
+| `GETVEHICLE` | VIN, bus protocol, what the vehicle reports |
+| `GETODO` | odometer and engine hours now - see below |
+| `POLLQ` | a POLL record now, through the normal queue |
+| `LIVETRACK <min>` / `LIVETRACK OFF` | a LIVE record every `demand_period_s` (param 151) for that long |
+| `CHECKIN` | the device checks in with device management now (configuration, firmware) |
+| `GETPARAMS <id>,<id>...` | `id=value;` for each |
+| `SETPARAMS <id>=<value>;...` | `OK applied=n rejected=n denied=n cfg=<revision>` |
+| `EVENTS [SERVER\|BLE ON\|OFF <name>,...]` | which events reach which channel |
+| `SETOUT <n> ON\|OFF [SAFE]` / `GETOUT` | switch an output (password) / the outputs now |
+| `RESET` | reboot, answered first (password) |
+
+`GETODO` is the call for an ELD at a duty-status change: one line of
+`key=value` pairs, split on spaces and `=`, `-` where a value is unknown:
+
+```
+odo=432105.0 odo_src=bus hours=7200.0 hours_src=bus ign=1 eng=1 spd=0
+lat=40.71275 lon=-74.00597 fix_age=1 utc=1790367448
+```
+
+`odo` is km and `hours` engine hours, one decimal, each with where it came
+from: `bus` (the vehicle reported it) or the device's own count (`gps` for
+distance, `calc` for hours). `fix_age` is seconds since that position;
+`utc` is the device's clock in unix seconds, `-` before it has one.
+
+**Settings** are numbered parameters, read and written as `id=value;`
+pairs. A value is always a number except for text: yes/no is `1`/`0`, a
+choice is its number (`32=2` is MQTT). `flevio/params.json` lists every one -
+key, title, type, unit, range, default, choices, and who may change it:
+`user` parameters from any channel, `protected` ones only after the
+configuration password, `locked` ones only through device management. It is
+generated from the same registry as the device's own settings, so it matches
+the firmware it ships with; `flevio.params` reads it:
+
+```python
+from flevio import params
+params.setparams({"move_send_period_s": 300})   # 'SETPARAMS 145=300;' - checked first
+params.parse("140=60;145=120;")                  # {140: '60', 145: '120'}
+params.describe(32, "2")                         # '32 srv1_protocol = mqtt (...)'
+```
+
+A secret parameter (a password) is never sent back unless the command
+carried the configuration password.
 
 ## Sizing
 
@@ -281,7 +502,7 @@ product around it:
 |---|---|---|---|
 | numeric elements | ids 1–249 | 152 | **97** |
 | string elements | ids 250–255 | 3 | **3** |
-| events | ids 0–255 | 36 | **220** |
+| events | ids 0–255 | 37 | **219** |
 
 Values themselves are unbounded — a signed varint grows to fit, so a counter
 that outgrows four bytes needs no format change at all.

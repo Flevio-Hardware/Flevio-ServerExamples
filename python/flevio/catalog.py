@@ -1,5 +1,7 @@
 """
 What the numbers mean: every event code and every IO element id.
+(Configuration parameters - the ids in GETPARAMS and SETPARAMS - are in
+:mod:`flevio.params`.)
 
 The wire protocol in :mod:`flevio.protocol` carries integers - an event is a
 byte, an IO element is an id and a value. This module is the dictionary that
@@ -137,6 +139,11 @@ EVENTS: Dict[int, Event] = {
         # --- the driver application ---
         Event(48, "BLE_CONN", "Driver app connected over BLE", False),
         Event(49, "BLE_DISCONN", "Driver app disconnected", False),
+        # --- wired inputs and outputs ---
+        # The record carries every input and output as extended elements
+        # din<n> / dout<n>; these say when one moved.
+        Event(52, "DOUT_CHANGED", "Output switched", False),
+        Event(53, "DIN_CHANGED", "Input changed", False),
     )
 }
 
@@ -591,3 +598,93 @@ def decode_io(io: Dict[int, object]) -> Dict[str, object]:
         else:
             out[d.name] = d.to_physical(int(value))
     return out
+
+
+# --------------------------------------------------------------------------
+# Extended elements
+# --------------------------------------------------------------------------
+#
+# Ids that arrive inside element 254 - a 16-bit space for everything a
+# tracker has that is not the vehicle bus: wired inputs and outputs, 1-Wire
+# and RS-485 sensors, Bluetooth sensors, cell information, device health.
+# The ranges are fixed in the firmware's proto.h; a new sensor takes the next
+# id in its range and nothing else moves. Bit 15 set means the value is
+# bytes. 60000 and up are a customer's own and are never assigned here.
+
+EXT_BLOB = 0x8000
+
+_EXT_FIXED = {
+    1100: ("driver_id", ""), 1101: ("driver_id_kind", ""), 1102: ("driver_auth", ""),
+    1240: ("tacho_state", ""), 1241: ("tacho_card", ""),
+    1301: ("cell_mcc", ""), 1302: ("cell_mnc", ""), 1303: ("cell_tac", ""),
+    1304: ("cell_id", ""), 1305: ("cell_rsrp", "dBm"), 1306: ("cell_rsrq", "dB x0.1"),
+    1307: ("cell_rat", ""), 1310: ("cell_iccid", ""),
+    1351: ("gnss_acc_m", "m"), 1352: ("gnss_fix_age_s", "s"), 1353: ("gnss_jamming", ""),
+    1354: ("gnss_sats_view", ""), 1355: ("gnss_ttff_s", "s"), 1356: ("gnss_alt_acc_m", "m"),
+    1401: ("dev_temp_c", "degC"), 1402: ("dev_heap_free", "B"), 1403: ("dev_modem_resets", ""),
+    1404: ("dev_uptime_s", "s"), 1405: ("dev_queue", ""), 1410: ("dev_hw_rev", ""),
+    1411: ("dev_model", ""),
+    1451: ("geofence_id", ""), 1452: ("geofence_state", ""), 1461: ("trip_id", ""),
+    1462: ("trip_distance_m", "m"), 1463: ("trip_duration_s", "s"), 1464: ("trip_idle_s", "s"),
+    1465: ("trip_max_kph", "km/h"), 1501: ("media_id", ""), 1502: ("media_kind", ""),
+}
+_EXT_RANGES = (
+    (1001, 8, "din", ""), (1011, 8, "dout", ""), (1021, 8, "ain", "mV"),
+    (1031, 4, "pulse", ""), (1041, 2, "freq", "Hz x0.1"),
+    (1111, 8, "temp", "degC x0.01"), (1121, 8, "temp_id", ""),
+    (1201, 4, "fuel_level", "x0.1"), (1211, 4, "fuel_temp", "degC"),
+    (1221, 4, "fuel_raw", ""), (1231, 4, "axle_load", "kg"),
+)
+_BLE_FIELDS = (
+    ("mac", ""), ("rssi", "dBm"), ("batt_pct", "%"), ("batt_mv", "mV"),
+    ("temp", "degC x0.01"), ("humidity", "% x0.1"), ("pressure", "hPa x0.1"),
+    ("lux", "lx"), ("magnet", ""), ("moving", ""), ("move_count", ""),
+    ("pitch", "deg"), ("roll", "deg"), ("flags", ""), ("custom", ""), ("adv", ""),
+    ("name", ""), ("kind", ""), ("age_s", "s"), ("tpms_kpa", "kPa"), ("fuel_pct", "% x0.1"),
+)
+
+BLE_KIND = {1: "beacon", 2: "thermometer", 3: "door", 4: "fuel cap", 5: "tyre", 6: "custom"}
+CELL_RAT = {1: "LTE-M", 2: "NB-IoT", 3: "GSM"}
+DRIVER_ID_KIND = {1: "iButton", 2: "RFID", 3: "BLE card", 4: "keypad"}
+DRIVER_AUTH = {0: "unknown", 1: "authorised", 2: "rejected"}
+GEOFENCE_STATE = {1: "entered", 2: "left"}
+MEDIA_KIND = {1: "photo", 2: "clip", 3: "bus capture", 4: "audio"}
+
+
+def ext_name(ext_id: int) -> str:
+    """``1351 -> 'gnss_acc_m'``, ``0x8000|2000 -> 'ble0_mac'``; unknown ids
+    come back as ``'ext_<n>'``."""
+    return _ext_def(ext_id)[0]
+
+
+def _ext_def(ext_id: int):
+    base = ext_id & ~EXT_BLOB
+    if base in _EXT_FIXED:
+        return _EXT_FIXED[base]
+    for lo, n, name, unit in _EXT_RANGES:
+        if lo <= base < lo + n:
+            return ("%s%d" % (name, base - lo + 1), unit)
+    if 2000 <= base < 2000 + 32 * 32:
+        slot, fld = divmod(base - 2000, 32)
+        name, unit = _BLE_FIELDS[fld] if fld < len(_BLE_FIELDS) else ("f%d" % fld, "")
+        return ("ble%d_%s" % (slot, name), unit)
+    if 4000 <= base <= 7999:
+        return ("vdb_%d" % base, "")
+    if base >= 60000:
+        return ("private_%d" % base, "")
+    return ("ext_%d" % base, "")
+
+
+def describe_ext(ext_id: int, raw) -> str:
+    """One line for a log: ``'ble0_temp = -1250 degC x0.01'``."""
+    name, unit = _ext_def(ext_id)
+    if isinstance(raw, (bytes, bytearray)):
+        return "%s = %s" % (name, bytes(raw).hex())
+    return "%s = %s%s" % (name, raw, (" " + unit) if unit else "")
+
+
+def decode_ext(ext: Dict[int, object]) -> Dict[str, object]:
+    """Turn a record's ``{ext_id: value}`` into ``{name: value}``. Bytes come
+    out as hex strings, so the result is JSON-ready. Nothing is dropped."""
+    return {_ext_def(k)[0]: (bytes(v).hex() if isinstance(v, (bytes, bytearray)) else v)
+            for k, v in ext.items()}

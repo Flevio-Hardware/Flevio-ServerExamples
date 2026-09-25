@@ -123,6 +123,8 @@ def _expected(e: dict) -> dict:
         "event": e["event"],
         "priority": e["priority"],
         "io": {int(k): v for k, v in e["io"].items()},
+        "ext": {int(k): (bytes.fromhex(v) if isinstance(v, str) else v)
+                for k, v in e.get("ext", {}).items()},
     }
     out["lat"] = e["lat_1e5"] / 1e5 if "lat_1e5" in e else None
     out["lon"] = e["lon_1e5"] / 1e5 if "lon_1e5" in e else None
@@ -148,6 +150,7 @@ def _compare(exp: dict, got: Record, where: str):
     for field in ("alt_m", "heading_deg", "speed_kph", "sats", "hdop"):
         assert getattr(got, field) == exp[field], "%s: %s" % (where, field)
     assert got.io == exp["io"], "%s: io %r != %r" % (where, got.io, exp["io"])
+    assert got.ext == exp["ext"], "%s: ext %r != %r" % (where, got.ext, exp["ext"])
 
 
 def test_corpus_data_frames():
@@ -165,7 +168,8 @@ def test_corpus_data_frames():
             _compare(_expected(records[f["first"] + i]), rec,
                      "seq %d record %d" % (f["seq"], i))
             seen += 1
-    assert seen >= 19, "the corpus should exercise every frame"
+    assert seen == sum(f["count"] for f in corpus["frames"] if f["kind"] == "data")
+    assert seen >= 17, "the corpus should exercise every frame"
 
 
 def _payload(f: dict) -> bytes:
@@ -187,6 +191,8 @@ def test_corpus_hello_ping_reply():
             assert h.fw == f["fw"]
             assert h.cfg_revision == f["cfg_revision"]
             assert h.want_ack == f["want_ack"]
+            assert h.version == 2
+            assert (h.model, h.hw, h.caps) == (f["model"], f["hw"], f["caps"])
         elif f["kind"] == "reply":
             cmd_id, text = p.decode_reply(_payload(f))
             assert cmd_id == f["cmd_id"] and text == f["text"]
@@ -204,7 +210,10 @@ def test_delta_coding_actually_saves_what_it_claims():
     wire = len(first["hex"]) // 2
     stored = sum(corpus["stored_bytes"])
     assert wire < stored * 0.7, "%d on the wire against %d stored" % (wire, stored)
-    assert wire / first["count"] < 45, "a record should average well under 45 bytes"
+    # Under 45 bytes for the bare drive; the corpus also carries a Bluetooth
+    # thermometer and the receiver's accuracy on every point, which is what
+    # a real unit with sensors sends, and that costs a few bytes a record.
+    assert wire / first["count"] < 50, "a record should average well under 50 bytes"
 
 
 # --------------------------------------------------------------------------
@@ -273,6 +282,90 @@ def test_undated_records_are_flagged():
     assert Record(ts=1789500000, event=0, priority=0).dated
 
 
+
+# --------------------------------------------------------------------------
+# Extended elements
+# --------------------------------------------------------------------------
+
+
+def test_extended_elements_round_trip_and_delta():
+    """Wired inputs and a Bluetooth thermometer, coded and decoded by the
+    Python pair; then the same thing an old decoder would see."""
+    from flevio import catalog
+    mac = bytes.fromhex("c47c8d6a1234")
+    a = Record(ts=1789500000, event=3, priority=0, io={1: 1},
+               ext={1351: 10, 1021: 12480, 0x8000 | 2000: mac, 2004: -1250})
+    b = Record(ts=1789500060, event=3, priority=0, io={1: 1},
+               ext={1351: 10, 0x8000 | 2000: mac, 2004: -1225})   # ain1 gone, temp up
+    c = Record(ts=1789500120, event=3, priority=0, io={1: 1})     # everything gone
+    frame = device.data_frame(7, [a, b, c])
+    parser = FrameParser()
+    parser.feed(frame)
+    batch = p.decode_data(parser.frames()[0].payload)
+    assert [r.ext for r in batch.records] == [a.ext, b.ext, {}]
+    assert batch.records[1].delta and batch.records[2].delta
+    assert catalog.ext_name(1021) == "ain1"
+    assert catalog.ext_name(0x8000 | 2000) == "ble0_mac"
+    assert catalog.ext_name(2004) == "ble0_temp"
+    assert catalog.decode_ext(a.ext)["ble0_mac"] == mac.hex()
+
+
+def test_a_decoder_that_predates_extended_elements_still_keeps_its_place():
+    """Element 254 is in the string range, so a decoder that has never heard
+    of it reads the length and skips - and lands on the next record."""
+    from flevio.protocol import get_varint, get_svarint, get_str8, F_POS, F_ALT, \
+        F_HEADING, F_SPEED, F_SATS, F_DELTA
+
+    def legacy_records(payload: bytes, count: int):
+        off = 4                                       # seq, flags, count
+        out = []
+        for _ in range(count):
+            _, off = get_varint(payload, off)
+            event, flags = payload[off], payload[off + 1]
+            off += 2
+            if flags & F_POS:
+                _, off = get_svarint(payload, off)
+                _, off = get_svarint(payload, off)
+            if flags & F_ALT:
+                _, off = get_svarint(payload, off)
+            if flags & F_HEADING:
+                off += 1
+            if flags & F_SPEED:
+                _, off = get_varint(payload, off)
+            if flags & F_SATS:
+                off += 2
+            n, off = get_varint(payload, off)
+            io = {}
+            for _ in range(n):
+                io_id = payload[off]
+                off += 1
+                if io_id >= 250:
+                    _, off = get_str8(payload, off)   # skips 254 without a thought
+                else:
+                    io[io_id], off = get_svarint(payload, off)
+            if flags & F_DELTA:
+                m, off = get_varint(payload, off)
+                off += m
+            out.append((event, io))
+        assert off == len(payload), "the legacy walk did not end on the last byte"
+        return out
+
+    mac = bytes.fromhex("c47c8d6a1234")
+    recs = [
+        Record(ts=1789500000, event=3, priority=0, lat=40.7, lon=-74.0, speed_kph=80,
+               io={1: 1, 66: 13800}, ext={1351: 10, 0x8000 | 2000: mac, 2004: -1250}),
+        Record(ts=1789500060, event=3, priority=0, lat=40.71, lon=-74.01, speed_kph=82,
+               io={1: 1, 66: 13820}, ext={1351: 15, 2004: -1200}),   # mac gone: tombstone
+        Record(ts=1789500120, event=6, priority=1, io={1: 0}),
+    ]
+    frame = device.data_frame(9, recs)
+    parser = FrameParser()
+    parser.feed(frame)
+    payload = parser.frames()[0].payload
+    seen = legacy_records(payload, 3)
+    assert [e for e, _ in seen] == [3, 3, 6]
+    assert seen[0][1] == {1: 1, 66: 13800}
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):
@@ -285,3 +378,4 @@ if __name__ == "__main__":
                 print("FAIL %s: %s" % (name, e))
     print("\n%s" % ("all tests passed" if not failed else "%d failed" % failed))
     sys.exit(1 if failed else 0)
+

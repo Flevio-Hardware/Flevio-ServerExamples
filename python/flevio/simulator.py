@@ -31,10 +31,12 @@ import asyncio
 import logging
 import math
 import random
+import re
 import time
 from typing import Dict, List, Optional
 
 from . import device as dev
+from . import params
 from . import protocol as p
 from .protocol import FrameParser, Record
 
@@ -185,6 +187,9 @@ class Simulator:
         is to send it once more. That is why a server must be able to take
         the same record twice without counting it twice."""
         self.fw, self.cfg_revision = fw, cfg_revision
+        # Every parameter at its default, as a device fresh from the factory.
+        self.config = {pid: str(int(q.default) if isinstance(q.default, bool) else q.default)
+                       for pid, q in params.PARAMS.items()}
         self.truck = Truck(imei)
         self.queue: List[Record] = []
         self.seq = 1
@@ -219,7 +224,9 @@ class Simulator:
         reader, writer = await asyncio.open_connection(self.host, self.port)
         log.info("connected to %s:%d as %s", self.host, self.port, self.imei)
         writer.write(dev.hello_frame(self.imei, self.truck.serial, self.fw,
-                                     self.cfg_revision, self.want_ack))
+                                     self.cfg_revision, self.want_ack,
+                                     model="FE-OT100", hw="rev0.2",
+                                     caps="gnss,lte-m,nb-iot,sms,ble,imu,can2,obd2,j1939,bat"))
         await writer.drain()
 
         parser = FrameParser()
@@ -315,12 +322,38 @@ class Simulator:
         if head == "GETSTATUS":
             return ("OK ign=%d moving=%d gsm=4 sats=11 vbat=4050 vext=13800 "
                     "queue=%d fw=%s" % (self.truck.ignition, 1, len(self.queue), self.fw))
+        if head == "GETODO":
+            # Same shape as the device's: key=value, split on spaces.
+            (lat, lon), _ = self.truck._position()
+            t = self.truck
+            return ("odo=%.1f odo_src=bus hours=%.1f hours_src=bus ign=%d eng=%d spd=0 "
+                    "lat=%.5f lon=%.5f fix_age=1 utc=%d" % (
+                        t.odometer_m / 1000.0, t.engine_s / 3600.0, t.ignition, t.ignition,
+                        lat, lon, int(time.time())))
         if head == "GETGPS":
             (lat, lon), hd = self.truck._position()
             return "OK %.6f,%.6f hdg=%d" % (lat, lon, hd)
+        if head == "GETPARAMS":
+            # The real answer's shape: id=value; for each known id, secrets
+            # left out.
+            ids = [w for w in re.split(r"[,; ]+", text.split(None, 1)[1] if " " in text.strip()
+                                       else "") if w.isdigit()]
+            out = "".join("%s=%s;" % (i, self.config[int(i)]) for i in ids
+                          if int(i) in self.config and not params.PARAMS[int(i)].secret)
+            return out or "no such parameters"
         if head == "SETPARAMS":
-            self.cfg_revision += 1
-            return "OK applied=1 rejected=0 denied=0 cfg=%d" % self.cfg_revision
+            applied = rejected = 0
+            for pid, value in params.parse(text.split(None, 1)[1] if " " in text.strip() else "").items():
+                try:
+                    pid, value = params.check(pid, value)
+                except ValueError:
+                    rejected += 1
+                    continue
+                self.config[pid] = value
+                applied += 1
+            if applied:
+                self.cfg_revision += 1
+            return "OK applied=%d rejected=%d denied=0 cfg=%d" % (applied, rejected, self.cfg_revision)
         if head == "EVENTS":
             return "OK events updated"
         return "ERR unknown command"
