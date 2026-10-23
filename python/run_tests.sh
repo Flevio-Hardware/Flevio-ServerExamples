@@ -19,6 +19,10 @@ echo "== parameters: the table is whole and agrees with the events"
 python3 tests/test_params.py
 
 echo
+echo "== fault code list: unpacking and the panel shape"
+python3 tests/test_dtc.py
+
+echo
 echo "== examples import cleanly"
 for f in examples/*.py; do
     python3 -c "import ast,sys; ast.parse(open('$f').read())"

@@ -200,6 +200,20 @@ A record with no fix has none of bits 0-4 set. A record written before the
 device knew the date carries the uptime in seconds as `ts` and element 248
 (`time_src`) = 0; the server should date it from arrival.
 
+**Sleep.** A parked device sleeps. Its last record before going quiet is
+event 40 `SLEEP`; the first after a wake is event 41 `WAKE`, with element
+240 `wake_source` (1 scheduled report, 2 vehicle bus, 3 movement, 4 supply
+voltage - the alternator, 5 supply cut or restored, 6 backup battery low,
+8 an SMS) and 241 `slept_s`. A wake that is only the next parked record
+(`OFF_PERIODIC`) sends no WAKE and no SLEEP around it. Between a SLEEP and
+the next record the silence is the device sleeping, not a fault - a
+server that marks devices offline should not count it. Records written
+right after a wake, before the first fix or network time, carry
+`time_src` = 3: the date carried through the sleep by the device's own
+clock, seconds off after an hour and possibly minutes after a long cold
+night. `WAKE` replaces `POWER_UP` after a sleep; `POWER_UP` still means a
+real power-up or reset.
+
 A record whose position was **reckoned** rather than measured - the device
 was in a tunnel and built the position from the vehicle bus distance and an
 estimated heading - carries element 244 (`pos_src`) = 1 and element 243
@@ -439,8 +453,44 @@ fits; a batch that does not fit is simply two frames.
 
 `PROTO_REC_MAX` (400) bounds one absolute record: 32 elements at up to 11
 bytes each plus two strings. The device drops elements past 32, so the
-fixed set and the things a record is about (a fault code on `DTC_NEW`, the
-shock on `SHOCK`) go in first and the database extras last.
+fixed set and the things a record is about (the fault list, the shock on
+`SHOCK`) go in first and the database extras last.
+
+### Fault codes
+
+The whole list of active fault codes travels as **one string element,
+`dtc_list` (IO 253), on every record**:
+
+    <engine light>:<count>:<code> <code> ...
+
+    1:3:000000100010030 003000177000010 P0420
+
+* `engine light` - 1 when the malfunction lamp is lit, else 0.
+* `count` - how many codes follow (at most 15; the element is 255 bytes).
+* A **15-digit code is J1939**: source address (3 digits), SPN (6), FMI
+  (2), occurrences (3), conversion method (1). `000000100010030` is SA 0
+  (engine), SPN 100, FMI 1, 3 occurrences, method 0.
+* **Anything else is an OBD2 code** (`P0420`).
+
+`flevio.catalog.decode_dtc_list()` unpacks it. The list is the current
+truth: a code not in it is not active, so a server only needs to compare
+each list with the one before - no per-fault bookkeeping, and nothing can
+get out of step. An unchanged list costs nothing after the first record of
+a frame. When the list changes the device sends a `DTC_CHANGED` (37) record
+at once, rather than waiting for the next periodic one; several faults
+appearing or going together make one record.
+
+What the device decides before a code is listed or dropped: a fault is
+listed once its controller has reported it for two seconds (one-off
+messages do not count) and dropped once that controller, still talking,
+has left it out for ten seconds - repaired, or cleared with a scan tool. A
+controller going quiet (ignition off) keeps its codes in the list, and the
+list survives a restart of the unit. `dtc_count` (176) carries the same
+count as a number; the lamps are 170-173. `GETDTC` returns the list by SMS
+or server command.
+
+On OBD2 cars the list carries the engine light and, until reading the
+car's stored codes (mode 03) is added, no codes.
 
 ## A minimal server loop
 

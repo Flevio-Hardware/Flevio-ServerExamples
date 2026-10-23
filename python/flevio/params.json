@@ -276,144 +276,151 @@
    "order": 22
   },
   {
+   "id": "trk_sleep",
+   "group": "tracking",
+   "title": "Sleep while parked",
+   "help": "How the device spends a parked night: asleep, drawing a few milliamps from the truck's battery, and how it wakes - the vehicle bus coming alive, the truck moving, the supply voltage rising, or the next scheduled report.",
+   "order": 23
+  },
+  {
    "id": "trk_telemetry",
    "group": "tracking",
    "title": "Vehicle telemetry",
    "help": "Full snapshots of the vehicle bus - temperatures, pressures, fuel, lamps - and how long such perishable records are worth keeping while the device is offline.",
-   "order": 23
+   "order": 24
   },
   {
    "id": "acq_stop_main",
    "group": "acq_stop",
    "title": "Vehicle on stop",
    "help": "A parked vehicle still has to report, or it is indistinguishable from a dead device.",
-   "order": 24
+   "order": 25
   },
   {
    "id": "acq_move_rec",
    "group": "acq_move",
    "title": "Write a record when",
    "help": "Any one of these is enough. Distance and angle together are what make a track follow the road rather than cut corners.",
-   "order": 25
+   "order": 26
   },
   {
    "id": "acq_move_send",
    "group": "acq_move",
    "title": "Sending",
    "help": "Records accumulate and leave in batches: one connection for ten records costs far less than ten connections.",
-   "order": 26
+   "order": 27
   },
   {
    "id": "acq_demand_main",
    "group": "acq_demand",
    "title": "On demand tracking",
    "help": "Dense tracking for a set number of minutes, started by LIVETRACK from the server or an SMS.",
-   "order": 27
+   "order": 28
   },
   {
    "id": "beh_enable",
    "group": "accel",
    "title": "Driving behaviour",
    "help": "The master switch for everything on this page.",
-   "order": 28
+   "order": 29
   },
   {
    "id": "beh_motion",
    "group": "accel",
    "title": "Motion sensing",
    "help": "How long vibration has to last before the accelerometer alone calls the vehicle moving, or still. Used when the movement source is the accelerometer, and by towing detection.",
-   "order": 29
+   "order": 30
   },
   {
    "id": "beh_harsh",
    "group": "accel",
    "title": "Harsh acceleration, braking and cornering",
    "help": "Thresholds are in milligravity. The minimum speed keeps a bump in a yard from counting as harsh braking.",
-   "order": 30
+   "order": 31
   },
   {
    "id": "beh_crash",
    "group": "accel",
    "title": "Crash detection",
    "help": "A crash is a much larger acceleration over a much shorter time than harsh braking.",
-   "order": 31
+   "order": 32
   },
   {
    "id": "beh_towing",
    "group": "accel",
    "title": "Towing detection",
    "help": "Movement with the ignition off: the vehicle is being taken somewhere, and nobody turned the key.",
-   "order": 32
+   "order": 33
   },
   {
    "id": "beh_idling",
    "group": "accel",
    "title": "Excessive idling",
    "help": "Engine running, vehicle stopped, for longer than a fleet is willing to pay for.",
-   "order": 33
+   "order": 34
   },
   {
    "id": "beh_speed",
    "group": "accel",
    "title": "Overspeeding",
    "help": "One limit for the whole fleet; road-specific limits belong on the server, which knows where the vehicle is.",
-   "order": 34
+   "order": 35
   },
   {
    "id": "can_bus",
    "group": "can",
    "title": "Bus connection",
    "help": "Auto-detection covers both pin pairs and both bitrates. Set a mode by hand only for a vehicle it gets wrong.",
-   "order": 35
+   "order": 36
   },
   {
    "id": "can_vin",
    "group": "can",
    "title": "Vehicle identification",
    "help": "A VIN typed in by hand overrides the bus - for a vehicle that does not publish one.",
-   "order": 36
+   "order": 37
   },
   {
    "id": "can_counters",
    "group": "can",
    "title": "Odometer and engine hours",
    "help": "The offsets exist so a replacement device continues the vehicle's numbers instead of restarting them at zero.",
-   "order": 37
+   "order": 38
   },
   {
    "id": "ble_radio",
    "group": "ble",
    "title": "Bluetooth",
    "help": "The radio, the name the driver sees in the list, and the pairing PIN.",
-   "order": 38
+   "order": 39
   },
   {
    "id": "ble_app",
    "group": "ble",
    "title": "Driver application",
    "help": "How often the phone is given fresh telemetry, and whether it may send commands back.",
-   "order": 39
+   "order": 40
   },
   {
    "id": "io_indication",
    "group": "io",
    "title": "Indication",
    "help": "The status LED: what a person in the cab can see.",
-   "order": 40
+   "order": 41
   },
   {
    "id": "ev_server",
    "group": "events",
    "title": "Sent to the server",
    "help": "Clearing a bit stops the event reaching the server at all - the most effective way to cut data volume. Essential events cannot be cleared: without them the records are not ELD records.",
-   "order": 41
+   "order": 42
   },
   {
    "id": "ev_ble",
    "group": "events",
    "title": "Shown in the driver application",
    "help": "What reaches the phone over Bluetooth.",
-   "order": 42
+   "order": 43
   }
  ],
  "models": [
@@ -427,9 +434,11 @@
     "sms",
     "ble",
     "imu",
-    "can2",
+    "canfd",
     "obd2",
     "j1939",
+    "j1708",
+    "kline",
     "bat"
    ]
   },
@@ -456,7 +465,9 @@
   "sms": "SMS commands",
   "ble": "Bluetooth driver application",
   "imu": "Accelerometer: driving behaviour, movement, towing",
-  "can2": "Two CAN interfaces (OBD2 and J1939 connectors)",
+  "canfd": "CAN FD controller on OBD2 pins 6/14: classic CAN and CAN FD vehicles",
+  "j1708": "J1708/J1587 port on OBD2 pins 12/13 (hardware; protocol support pending)",
+  "kline": "K-line (ISO 9141 / KWP2000) on OBD2 pin 7 (hardware; protocol support pending)",
   "obd2": "OBD2 diagnostics and telemetry",
   "j1939": "J1939 heavy-duty telemetry",
   "bat": "Backup battery: power-cut reporting, records after ignition off",
@@ -664,6 +675,23 @@
    "title": "Hardware revision",
    "help": "The board revision this unit was built as, e.g. rev0.3. Written once at manufacture by the production bench, next to the serial number; the firmware reports it to FlevioDMS so the same build can run on every revision and the server still knows which board is in the field. Empty means the revision the firmware was written against.",
    "access": "locked",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 12,
+   "key": "sms_auth_reply",
+   "group": "system",
+   "block": "sys_access",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Answer a wrong SMS password",
+   "help": "Reply 'ERR wrong password' to an SMS whose password is wrong, and say so when SMS commands are off because no SMS password is set. At most one such reply per number every 10 minutes and 20 a day, and a number that gets the password wrong 5 times in an hour is ignored for the next hour - so the reply helps an installer who mistyped without helping anyone guess. Off: such messages get no reply at all, which does not even confirm that a device answers on this number.",
+   "access": "protected",
    "secret": false,
    "models": [
     "*"
@@ -879,11 +907,12 @@
    "group": "server1",
    "block": "srv1_ack",
    "type": "u16",
-   "default": 60,
+   "default": 300,
    "min": 0,
    "max": 3600,
    "unit": "s",
    "title": "Keepalive / ping period",
+   "help": "How long the connection may be silent before the device (TCP: a PING frame; MQTT: the modem's own keepalive) shows the server it is still there. It is the largest single data cost of an idle device: at 60 s the keepalives alone are about 6 MB a month over TLS, at 300 s about 1 MB - and while the vehicle moves, a record batch every two minutes means no keepalive is needed at all. Five minutes is inside what mobile networks keep an idle connection open for; go lower only if a network is seen dropping the session between sends.",
    "access": "protected",
    "secret": false,
    "models": [
@@ -1754,6 +1783,145 @@
    "secret": false,
    "models": [
     "*"
+   ]
+  },
+  {
+   "id": 79,
+   "key": "gnss_park_sleep_min",
+   "group": "tracking",
+   "block": "trk_gnss",
+   "type": "u16",
+   "default": 10,
+   "min": 0,
+   "max": 1440,
+   "unit": "min",
+   "title": "Receiver off after parking, minutes",
+   "help": "Ignition off and nothing moving for this long: the receiver is switched off. A parked vehicle's position is the one it parked at; a receiver tracking it all night draws tens of milliamps from a battery nobody is charging, and keeps the radio from the front end it needs for the server and for SMS. Ignition, movement (towing) or a live-tracking request switch it straight back on, and it keeps its almanac and last position, so that is a hot start of a second or two. 0 = never switch it off.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 80,
+   "key": "sleep_mode",
+   "group": "tracking",
+   "block": "trk_sleep",
+   "type": "enum",
+   "default": 1,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "off",
+     "label": "Off - never sleep"
+    },
+    {
+     "v": 1,
+     "name": "deep",
+     "label": "Deep sleep, modem registered"
+    },
+    {
+     "v": 2,
+     "name": "deepest",
+     "label": "Deep sleep, modem off"
+    }
+   ],
+   "title": "Sleep while parked",
+   "help": "Deep sleep turns everything off except what is needed to wake up: the CAN controller listening for bus traffic, the accelerometer for movement and a timer. The device sleeps once the ignition has been off, nothing has moved and nothing is left to send for the time below, and wakes for the bus, movement, the supply voltage, the next scheduled parked record, heartbeat or management check-in. 'Modem registered' keeps the modem on the network in its own sleep - a wake reaches the server in seconds, at about 1-2 mA more. 'Modem off' switches it off - the lowest draw, but every wake attaches to the network from scratch (10-60 s). SMS commands reach a sleeping device with the modem registered within param 84's interval; with the modem off, at its next wake. Off: never sleeps, as before.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 81,
+   "key": "sleep_after_min",
+   "group": "tracking",
+   "block": "trk_sleep",
+   "type": "u16",
+   "default": 10,
+   "min": 1,
+   "max": 1440,
+   "unit": "min",
+   "title": "Sleep after parked for",
+   "help": "Ignition off, not moving, no driver application connected, no live tracking and nothing waiting to be sent, for this long. After a wake that turns out to be nothing (a door, a module on the bus waking for a moment) the device goes back to sleep after two minutes instead.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 80,
+    "not": 0
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 82,
+   "key": "sleep_check_s",
+   "group": "tracking",
+   "block": "trk_sleep",
+   "type": "u16",
+   "default": 120,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "Supply voltage check while asleep",
+   "help": "How often the sleeping device wakes for a fraction of a second to measure the supply: a voltage above the ignition threshold (the alternator charging) wakes it fully, and so does the supply being cut or restored, or the backup battery running low. It is the only ignition wake on a vehicle with no CAN bus. Each check costs about a third of a second awake. 0: no voltage checks.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 80,
+    "not": 0
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 83,
+   "key": "sleep_wake_on",
+   "group": "tracking",
+   "block": "trk_sleep",
+   "type": "u8",
+   "default": 15,
+   "min": 0,
+   "max": 15,
+   "title": "Wake on",
+   "help": "Bit mask. 1: vehicle bus traffic (any CAN frame). 2: movement (the accelerometer). 4: supply voltage (checked as set above). 8: an SMS - with the modem registered (sleep_mode 1), the device looks at the SIM for new messages as often as param 84 says (the 0.6.1 board has no line from the modem that could wake it). The timer for scheduled reports always runs. A source that wakes the device three times within an hour for nothing is ignored for the next two hours, so a truck being loaded at a dock or a bus that wakes every few minutes does not keep the device awake all night.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 80,
+    "not": 0
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 84,
+   "key": "sleep_sms_poll_s",
+   "group": "tracking",
+   "block": "trk_sleep",
+   "type": "u16",
+   "default": 180,
+   "min": 0,
+   "max": 3600,
+   "unit": "s",
+   "title": "SMS check while asleep",
+   "help": "How often a sleeping device with its modem registered looks at the SIM for a new SMS: GETPOS for where it is, CHECKIN to fetch an update from FlevioDMS, or any other command. An SMS reaches a sleeping device within this time plus the network's paging delay (about 20 s). Each look costs about half a second awake with the modem briefly out of its sleep. 0: SMS are read only at the device's next wake for another reason.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 80,
+    "not": 0
+   },
+   "models": [
+    "FE-OT100"
    ]
   },
   {
@@ -2953,12 +3121,12 @@
     {
      "v": 1,
      "name": "obd2",
-     "label": "OBD2 only"
+     "label": "OBD2 only (CAN and K-line)"
     },
     {
      "v": 2,
      "name": "j1939",
-     "label": "J1939 only"
+     "label": "Heavy truck only (J1939 and J1708)"
     },
     {
      "v": 3,
@@ -2967,46 +3135,9 @@
     }
    ],
    "title": "Bus mode",
+   "help": "Automatic looks for J1939 and OBD2 on CAN, then J1708, then OBD2 on the K-line. OBD2 only covers OBD2 on CAN and on the K-line (cars and light trucks); J1939 only covers the heavy-truck buses, J1939 and J1708.",
    "access": "protected",
    "secret": false,
-   "models": [
-    "FE-OT100"
-   ]
-  },
-  {
-   "id": 181,
-   "key": "can_channel",
-   "group": "can",
-   "block": "can_bus",
-   "type": "enum",
-   "default": 0,
-   "min": 0,
-   "max": 2,
-   "enum": [
-    {
-     "v": 0,
-     "name": "auto",
-     "label": "Automatic"
-    },
-    {
-     "v": 1,
-     "name": "can1",
-     "label": "CAN1 (pins 6/14)"
-    },
-    {
-     "v": 2,
-     "name": "can2",
-     "label": "CAN2 (pins 3/11)"
-    }
-   ],
-   "title": "Channel",
-   "help": "CAN1 is pins 6/14 of the OBD2 connector, CAN2 is pins 3/11 (J1939 through a 9-to-16 adapter).",
-   "access": "protected",
-   "secret": false,
-   "depends": {
-    "param": 180,
-    "not": 3
-   },
    "models": [
     "FE-OT100"
    ]
@@ -3096,7 +3227,7 @@
     }
    ],
    "title": "Bus safety mode",
-   "help": "Listen only never transmits anything onto the bus. It is the safest option, but the VIN and odometer cannot be requested.",
+   "help": "Applies to every vehicle bus. Listen only never transmits anything: the safest option, but the VIN and odometer cannot be requested, and K-line cars cannot be read at all (they answer only when woken). With 'ignition on' requests go out only while the ignition is on.",
    "access": "protected",
    "secret": false,
    "models": [
@@ -3297,6 +3428,147 @@
    ]
   },
   {
+   "id": 192,
+   "key": "can_stream_max_min",
+   "group": "can",
+   "block": "can_bus",
+   "type": "u16",
+   "default": 10,
+   "min": 0,
+   "max": 240,
+   "unit": "min",
+   "title": "Longest live bus stream",
+   "help": "The CANLOG command streams the vehicle's bus frames as text to the MQTT session, for an engineer watching in a client while a vehicle is being reverse-engineered. It is bounded: a stream ends after the minutes asked for, never later than this, and sends a frame only when its bytes changed, at most a few times a second per id. A full car bus comes to a few kilobytes a second, so ten minutes is a few megabytes of data. 0 refuses the command altogether.",
+   "access": "protected",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 193,
+   "key": "can_fd_data_rate",
+   "group": "can",
+   "block": "can_bus",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 2,
+   "enum": [
+    {
+     "v": 0,
+     "name": "2m",
+     "label": "2 Mbit/s"
+    },
+    {
+     "v": 1,
+     "name": "5m",
+     "label": "5 Mbit/s"
+    },
+    {
+     "v": 2,
+     "name": "1m",
+     "label": "1 Mbit/s"
+    }
+   ],
+   "title": "CAN FD data rate",
+   "help": "The bit rate of the data phase of CAN FD frames, which the newer passenger-car platforms (2021+) carry at the diagnostic socket. The arbitration rate is found by auto-detection as before; the data rate cannot be, and the vehicle's frames are unreadable until it matches. 2 Mbit/s is what every platform seen so far uses. Classic CAN vehicles are not affected by this setting.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 194,
+   "key": "counter_controller",
+   "group": "can",
+   "block": "can_counters",
+   "type": "enum",
+   "default": 0,
+   "min": 0,
+   "max": 3,
+   "enum": [
+    {
+     "v": 0,
+     "name": "engine",
+     "label": "Engine controller, dashboard if absent"
+    },
+    {
+     "v": 1,
+     "name": "dash",
+     "label": "Dashboard (instrument cluster), engine if absent"
+    },
+    {
+     "v": 2,
+     "name": "engine_only",
+     "label": "Engine controller only"
+    },
+    {
+     "v": 3,
+     "name": "dash_only",
+     "label": "Dashboard only"
+    }
+   ],
+   "title": "Odometer and engine hours: which controller",
+   "help": "Which controller's total distance and engine hours the device reports when a vehicle broadcasts more than one. On J1939 trucks the engine controller (ECM) and the instrument cluster often disagree by thousands of kilometres: the ECM counts since it was fitted, the cluster shows the legal mileage. An ELD must record the engine's figures, so the default is the engine controller with the dashboard as a stand-in when the engine does not broadcast them. Fleets that reconcile against the dash (IFTA, leasing) can put the dashboard first. The 'only' choices report nothing rather than the other source. On OBD2 cars the engine's odometer is PID A6 and the dashboard's is the cluster's broadcast frame, where known.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 195,
+   "key": "j1708_enabled",
+   "group": "can",
+   "block": "can_bus",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "J1708 / J1587 (older trucks, pins 12/13)",
+   "help": "Listen for J1708 when no J1939 is found, and alongside J1939 to fill in what it lacks. Requests (VIN, odometer, engine hours) follow the bus safety mode and are only sent once J1708 traffic has been heard.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
+   "id": 196,
+   "key": "kline_enabled",
+   "group": "can",
+   "block": "can_bus",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "OBD2 on the K-line (older cars, pin 7)",
+   "help": "Try ISO 9141-2 and ISO 14230 (KWP2000) when the vehicle has no CAN bus. Needs a safety mode that allows transmitting.",
+   "access": "protected",
+   "secret": false,
+   "depends": {
+    "param": 180,
+    "not": 3
+   },
+   "models": [
+    "FE-OT100"
+   ]
+  },
+  {
    "id": 200,
    "key": "ble_enabled",
    "group": "ble",
@@ -3418,6 +3690,66 @@
    ]
   },
   {
+   "id": 213,
+   "key": "tap_diag",
+   "group": "io",
+   "block": "io_indication",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Double tap shows faults on the LED",
+   "help": "Knock twice on the case and the LED plays what is wrong: colour = which part, number of blinks = what exactly. Ignored while the vehicle is moving. Works even with the status LED switched off.",
+   "access": "user",
+   "secret": false,
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 214,
+   "key": "tap_ths_mg",
+   "group": "io",
+   "block": "io_indication",
+   "type": "u16",
+   "default": 1300,
+   "min": 400,
+   "max": 8000,
+   "unit": "mg",
+   "title": "Tap sensitivity",
+   "help": "How hard a tap has to be. Lower is more sensitive; too low and door slams count as taps.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 213,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
+   "id": 215,
+   "key": "tap_reboot",
+   "group": "io",
+   "block": "io_indication",
+   "type": "bool",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "title": "Three double taps restart the device",
+   "help": "Double tap three times in a row (each within 3 s) while parked: the LED flashes white for 5 s - double tap to cancel - then the modem is powered off and the device restarts.",
+   "access": "user",
+   "secret": false,
+   "depends": {
+    "param": 213,
+    "value": 1
+   },
+   "models": [
+    "*"
+   ]
+  },
+  {
    "id": 220,
    "key": "event_mask_1",
    "group": "events",
@@ -3440,7 +3772,7 @@
    "group": "events",
    "block": "ev_server",
    "type": "u32",
-   "default": 4128831,
+   "default": 4129599,
    "min": 0,
    "max": 4294967295,
    "title": "Server events - mask 2",
@@ -3764,12 +4096,33 @@
   },
   {
    "code": 37,
-   "name": "DTC_NEW",
-   "label": "New fault code",
+   "name": "DTC_CHANGED",
+   "label": "Fault code list changed",
    "essential": false,
    "perishable": false,
    "bit": 5,
-   "mask": 221
+   "mask": 221,
+   "help": "Sent once when the list of active fault codes changes - a fault confirmed (in a controller's list for two seconds) or repaired (left out for ten seconds by a controller that is still talking), however many changed together. The list itself, IO 253 dtc_list, rides on every record: '<engine light>:<count>:<code> <code> ...', a J1939 code being 15 digits - source address (3), SPN (6), FMI (2), occurrences (3), conversion method (1) - and anything else an OBD2 code. The record makes the change reach the server at once rather than with the next periodic record."
+  },
+  {
+   "code": 40,
+   "name": "SLEEP",
+   "label": "Device going to sleep",
+   "essential": false,
+   "perishable": false,
+   "bit": 8,
+   "mask": 221,
+   "help": "The last record before the device sleeps while parked. It is sent before the device goes quiet, so a server knows the silence that follows is sleep and not a fault. The next record comes at a wake: the vehicle bus, movement, the supply voltage or the next scheduled parked record."
+  },
+  {
+   "code": 41,
+   "name": "WAKE",
+   "label": "Device woke up",
+   "essential": false,
+   "perishable": false,
+   "bit": 9,
+   "mask": 221,
+   "help": "The first record after a sleep, in place of POWER_UP: element 240 wake_source says what woke it (1 scheduled report, 2 vehicle bus, 3 movement, 4 supply voltage, 5 supply cut or restored, 6 backup battery low) and element 241 slept_s for how long."
   },
   {
    "code": 48,

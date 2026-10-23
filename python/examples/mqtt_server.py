@@ -80,6 +80,13 @@ def show_record(imei: str, r) -> None:
         print("      " + ", ".join(catalog.describe(k, v) for k, v in sorted(r.io.items())))
     if r.ext:
         print("      " + ", ".join(catalog.describe_ext(k, v) for k, v in sorted(r.ext.items())))
+    if 253 in r.io:
+        # The fault list (IO 253): the whole current truth, unpacked here.
+        f = catalog.decode_dtc_list(str(r.io[253]))
+        print("      faults: engine light %s, %d active%s" % (
+            "ON" if f["engine_light"] else "off", f["count"],
+            "".join("\n        %s%s" % (c["code"], " - %s, %d occurrences" % (c["source"], c["occurrences"])
+                                           if c["bus"] == "J1939" else "") for c in f["codes"])))
 
 
 def show_odo(answer: str) -> None:

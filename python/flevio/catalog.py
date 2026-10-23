@@ -54,11 +54,17 @@ __all__ = [
     "io_by_name",
     "describe",
     "decode_io",
+    "decode_dtc_list",
+    "dtc_for_panel",
+    "dtc_hex",
+    "SPN_NAMES",
+    "J1939_SOURCES",
     "RESET_REASON",
     "HEALTH_REASON",
     "HEALTH_TASK",
     "reset_detail",
     "TIME_SOURCE",
+    "WAKE_SOURCE",
     "BUS_PROTOCOL",
     "ODOMETER_SOURCE",
     "J1939_STATE",
@@ -100,6 +106,11 @@ EVENTS: Dict[int, Event] = {
         Event(23, "POWER_OFF", "Device shutting down", True),
         Event(50, "CFG_CHANGED", "Configuration changed", True),
         Event(51, "FW_UPDATED", "Firmware updated", True),
+        # A parked device sleeps; SLEEP is its last record before it goes
+        # quiet, WAKE its first after a wake that was not just the next
+        # parked record (wake_source and slept_s say what and how long).
+        Event(40, "SLEEP", "Device going to sleep", False),
+        Event(41, "WAKE", "Device woke up", False),
         # --- ignition and motion ---
         Event(1, "IGN_ON", "Ignition ON", True),
         Event(2, "IGN_OFF", "Ignition OFF", True),
@@ -135,7 +146,7 @@ EVENTS: Dict[int, Event] = {
         Event(34, "BUS_LOST", "Moving without ECU data", True),
         Event(35, "MIL_ON", "Check engine lamp ON", False),
         Event(36, "MIL_OFF", "Check engine lamp OFF", False),
-        Event(37, "DTC_NEW", "New fault code", False),
+        Event(37, "DTC_CHANGED", "Fault code list changed", False),
         # --- the driver application ---
         Event(48, "BLE_CONN", "Driver app connected over BLE", False),
         Event(49, "BLE_DISCONN", "Driver app disconnected", False),
@@ -217,6 +228,17 @@ TIME_SOURCE = {
     0: "none (uptime, not a date)",
     1: "satellites",
     2: "cellular network",
+    3: "device clock, carried through a sleep",
+}
+WAKE_SOURCE = {
+    1: "scheduled report",
+    2: "vehicle bus",
+    3: "movement",
+    4: "supply voltage (engine running)",
+    5: "supply cut or restored",
+    6: "backup battery low",
+    7: "other",
+    8: "SMS",
 }
 RESET_REASON = {
     1: "power-on",
@@ -226,6 +248,7 @@ RESET_REASON = {
     5: "brownout",
     6: "external pin",
     7: "other",
+    8: "woke from deep sleep",
 }
 #: The high nibble of ``reset_detail`` (IO 247): what the health monitor did.
 #: 0 means the reset was not the firmware's own decision - read IO 246 then.
@@ -279,6 +302,18 @@ def reset_detail(raw: int):
 #: like on this protocol.
 J1939_STATE = {0: "off", 1: "on", 2: "error"}
 _ONOFF = {0: "off", 1: "on"}
+FUEL_TYPE = {0: "not available", 1: "gasoline", 2: "methanol", 3: "ethanol", 4: "diesel", 5: "LPG",
+             6: "CNG", 7: "propane", 8: "electric", 9: "bifuel gasoline", 10: "bifuel methanol",
+             11: "bifuel ethanol", 12: "bifuel LPG", 13: "bifuel CNG", 14: "bifuel propane",
+             15: "bifuel electric", 16: "bifuel electric and combustion", 17: "hybrid gasoline",
+             18: "hybrid ethanol", 19: "hybrid diesel", 20: "hybrid electric",
+             21: "hybrid electric and combustion", 22: "hybrid regenerative", 23: "bifuel diesel"}
+OBD_STANDARD = {1: "OBD-II (CARB)", 2: "OBD (EPA)", 3: "OBD and OBD-II", 4: "OBD-I", 5: "not OBD compliant",
+                6: "EOBD", 7: "EOBD and OBD-II", 8: "EOBD and OBD", 9: "EOBD, OBD and OBD-II",
+                10: "JOBD", 11: "JOBD and OBD-II", 12: "JOBD and EOBD", 13: "JOBD, EOBD and OBD-II",
+                17: "EMD", 18: "EMD+", 19: "HD OBD-C", 20: "HD OBD", 21: "WWH OBD", 23: "HD EOBD-I",
+                24: "HD EOBD-I N", 25: "HD EOBD-II", 26: "HD EOBD-II N", 28: "OBDBr-1", 29: "OBDBr-2",
+                30: "KOBD", 31: "IOBD-I", 32: "IOBD-II", 33: "HD EOBD-IV"}
 
 
 def _d(
@@ -316,6 +351,25 @@ IO: Dict[int, IoDef] = {
         _d(67, "batt_voltage", "V", 0.001, group="device",
            desc="The device's own backup cell, in millivolts on the wire."),
         _d(68, "batt_percent", "%", group="device"),
+        # What the vehicle says about itself over OBD2 (once per trip).
+        _d(70, "fuel_type", enum=FUEL_TYPE, group="bus", desc="PID 51."),
+        _d(71, "ethanol_pct", "%", group="bus", desc="PID 52."),
+        _d(72, "hv_battery_pct", "%", group="bus",
+           desc="PID 5B: the traction battery of a hybrid or an EV."),
+        _d(73, "obd_standard", enum=OBD_STANDARD, group="bus", desc="PID 1C."),
+        _d(74, "warmups", "", group="bus", desc="PID 30: warm-up cycles since codes were cleared."),
+        # What a passenger car broadcasts on its own (per-make frames; present
+        # only where the vehicle database knows the make's frames).
+        _d(75, "wheel_speed_fl", "km/h", 0.001, group="bus", desc="Front left wheel."),
+        _d(76, "wheel_speed_fr", "km/h", 0.001, group="bus", desc="Front right wheel."),
+        _d(77, "wheel_speed_rl", "km/h", 0.001, group="bus", desc="Rear left wheel."),
+        _d(78, "wheel_speed_rr", "km/h", 0.001, group="bus", desc="Rear right wheel."),
+        _d(79, "steering_angle", "deg", 0.1, group="bus", desc="Left is negative."),
+        _d(80, "door_driver", enum={0: "closed", 1: "open"}, group="bus"),
+        _d(81, "door_passenger", enum={0: "closed", 1: "open"}, group="bus"),
+        _d(82, "seatbelt_driver", enum={0: "unfastened", 1: "fastened"}, group="bus"),
+        _d(83, "turn_left", enum=_ONOFF, group="bus", desc="Indicator lamp."),
+        _d(84, "turn_right", enum=_ONOFF, group="bus", desc="Indicator lamp."),
         _d(209, "accel_magnitude", "g", 0.001, group="device",
            desc="Peak acceleration behind a driving event, in milli-g."),
         _d(210, "hdop", "", 0.1, group="device",
@@ -338,6 +392,10 @@ IO: Dict[int, IoDef] = {
         _d(245, "cfg_revision", "", group="meta",
            desc="The configuration revision, on CFG_CHANGED. Line a change "
                 "of behaviour up with the write that caused it."),
+        _d(240, "wake_source", enum=WAKE_SOURCE, group="meta",
+           desc="What woke the device from its parked sleep, on WAKE."),
+        _d(241, "slept_s", "s", group="meta",
+           desc="How long the device slept before this WAKE."),
         _d(246, "reset_reason", enum=RESET_REASON, group="meta",
            desc="Why the device started, on POWER_UP."),
         _d(247, "reset_detail", group="meta",
@@ -347,7 +405,10 @@ IO: Dict[int, IoDef] = {
         _d(248, "time_src", enum=TIME_SOURCE, group="meta",
            desc="Where this record's timestamp came from. ABSENT MEANS 1 "
                 "(satellites). When it is 0 the header holds seconds since "
-                "boot, not a date - re-date the record from its arrival."),
+                "boot, not a date - re-date the record from its arrival. "
+                "3: the device's own clock, carried through a sleep - "
+                "seconds to minutes off after a long night until the next "
+                "fix or network time."),
         _d(249, "simulated", enum=_ONOFF, group="meta",
            desc="This record was produced by the ELD Simulator. A server "
                 "that ignores it will store invented mileage as real."),
@@ -356,6 +417,10 @@ IO: Dict[int, IoDef] = {
         _d(251, "serial", is_string=True, group="meta",
            desc="The serial number printed on the label."),
         # --- identity from the vehicle ------------------------------------
+        _d(253, "dtc_list", is_string=True, group="bus",
+           desc="Every active fault code, on every record: '<engine light>:<count>:<code> <code> ...'. "
+                "A 15-digit code is J1939 - source address (3), SPN (6), FMI (2), occurrences (3), "
+                "conversion method (1); anything else is OBD2 (P0420). decode_dtc_list() unpacks it."),
         _d(250, "vin", is_string=True, group="bus",
            desc="Vehicle identification number, as the bus reports it."),
         # --- the bus, firmware's own fixed set ----------------------------
@@ -442,10 +507,6 @@ IO: Dict[int, IoDef] = {
         _d(171, "lamp_red_stop", enum=J1939_STATE, group="bus"),
         _d(172, "lamp_amber_warn", enum=J1939_STATE, group="bus"),
         _d(173, "lamp_protect", enum=J1939_STATE, group="bus"),
-        _d(174, "dtc_spn", "", group="bus",
-           desc="Suspect parameter number: which part. On DTC_NEW only."),
-        _d(175, "dtc_fmi", "", group="bus",
-           desc="Failure mode: how it is broken. On DTC_NEW only."),
         _d(176, "dtc_count", "", group="bus",
            desc="How many faults the vehicle reports active."),
         # --- engine fluids and the rest of the engine block ------------
@@ -688,3 +749,171 @@ def decode_ext(ext: Dict[int, object]) -> Dict[str, object]:
     out as hex strings, so the result is JSON-ready. Nothing is dropped."""
     return {_ext_def(k)[0]: (bytes(v).hex() if isinstance(v, (bytes, bytearray)) else v)
             for k, v in ext.items()}
+
+
+# --- Fault codes -------------------------------------------------------
+
+#: The usual J1939 source addresses, for a readable controller name.
+J1939_SOURCES = {
+    0: "Engine #1", 1: "Engine #2", 3: "Transmission #1", 11: "Brakes - system controller",
+    15: "Retarder - engine", 16: "Retarder - driveline", 23: "Instrument cluster #1",
+    33: "Body controller", 39: "Management computer #1", 49: "Cab controller - primary",
+    61: "Exhaust emission controller", 71: "Vehicle management", 238: "Tachograph",
+}
+
+
+#: SPN names for fault descriptions: every SPN the standard J1939 profile
+#: decodes, plus fault SPNs met on real trucks. Not the whole standard (that
+#: list is SAE's); an SPN missing here is described by number only.
+SPN_NAMES = {
+    38: "Fuel level 2",
+    52: "Intercooler temperature",
+    69: "Two speed axle switch",
+    70: "Parking brake",
+    79: "Road surface temperature",
+    80: "Washer fluid level",
+    84: "Wheel-based speed",
+    86: "Cruise control set speed",
+    91: "Accelerator pedal position",
+    92: "Engine load at current speed",
+    94: "Fuel delivery pressure",
+    95: "Fuel filter differential pressure",
+    96: "Fuel level",
+    98: "Engine oil level",
+    100: "Engine oil pressure",
+    101: "Crankcase pressure",
+    102: "Boost pressure",
+    105: "Intake manifold temperature",
+    106: "Air inlet pressure",
+    107: "Air filter differential pressure",
+    108: "Barometric pressure",
+    109: "Engine coolant pressure",
+    110: "Engine coolant temperature",
+    111: "Engine coolant level",
+    114: "Net battery current",
+    115: "Alternator current",
+    158: "Keyswitch battery potential",
+    161: "Input shaft speed",
+    167: "Alternator potential",
+    168: "Battery potential",
+    170: "Cab interior temperature",
+    171: "Ambient air temperature",
+    172: "Air inlet temperature",
+    174: "Fuel temperature",
+    175: "Engine oil temperature",
+    176: "Turbo oil temperature",
+    177: "Transmission oil temperature",
+    182: "Trip fuel used",
+    183: "Fuel rate",
+    184: "Instantaneous fuel economy",
+    185: "Average fuel economy",
+    190: "Engine speed",
+    191: "Output shaft speed",
+    235: "Total idle hours",
+    236: "Total idle fuel used",
+    247: "Total engine hours",
+    250: "Total fuel used",
+    512: "Driver demand torque",
+    513: "Actual engine torque",
+    522: "Clutch slip",
+    523: "Current gear",
+    524: "Selected gear",
+    526: "Actual gear ratio",
+    558: "Low idle switch",
+    559: "Kickdown switch",
+    560: "Driveline engaged",
+    573: "Torque converter lockup",
+    595: "Cruise control active",
+    596: "Cruise control enabled",
+    597: "Brake switch",
+    598: "Clutch switch",
+    623: "Red stop lamp",
+    624: "Amber warning lamp",
+    899: "Engine torque mode",
+    914: "Service distance",
+    917: "Total vehicle distance",
+    918: "Trip distance",
+    976: "PTO state",
+    987: "Protect lamp",
+    1213: "Malfunction indicator lamp",
+    1611: "Vehicle motion",
+    1624: "Tachograph speed",
+    1761: "DEF tank level",
+    2432: "Engine demand torque",
+    2791: "Engine EGR 1 Valve Control",
+    3031: "DEF tank temperature",
+    3216: "Aftertreatment 1 Intake NOx",
+    3241: "Exhaust gas temperature",
+    3719: "DPF soot load",
+    3720: "DPF ash load",
+    3721: "Time since DPF regeneration"
+}
+
+
+def dtc_hex(spn: int, fmi: int, occurrences: int, cm: int = 0) -> str:
+    """The four bytes of the fault as the vehicle sent them in DM1, read as a
+    little-endian 32-bit number: ``0x`` + occurrence/CM byte, FMI/SPN-high
+    byte, SPN middle, SPN low. SPN 3216, FMI 10, 105 occurrences ->
+    ``0x690A0C90``. The usual compact form of a J1939 fault in fleet
+    software."""
+    b0 = spn & 0xFF
+    b1 = (spn >> 8) & 0xFF
+    b2 = ((spn >> 16) & 0x7) << 5 | (fmi & 0x1F)
+    b3 = (cm & 1) << 7 | (occurrences & 0x7F)
+    return "0x%02X%02X%02X%02X" % (b3, b2, b1, b0)
+
+
+def decode_dtc_list(text: str) -> Dict[str, object]:
+    """Unpack IO 253 (``dtc_list``).
+
+        >>> decode_dtc_list("1:2:000002791130020 033006893041260")["codes"][0]["spn"]
+        2791
+
+    Returns ``{"engine_light": bool, "count": int, "codes": [...]}``. A J1939
+    code becomes ``{"bus": "J1939", "sa", "source", "spn", "fmi",
+    "occurrences", "cm", "raw", "code": "SPN 2791 FMI 13 SA 0"}``; anything
+    else ``{"bus": "OBD-II", "code": "P0420", "raw": "P0420"}``. The list is
+    the whole current truth: what is not in it is not active.
+    """
+    parts = text.split(":", 2)
+    if len(parts) < 3:
+        raise ValueError("not a fault code list: %r" % text)
+    codes = []
+    for raw in parts[2].split():
+        if len(raw) == 15 and raw.isdigit():
+            sa, spn, fmi = int(raw[0:3]), int(raw[3:9]), int(raw[9:11])
+            oc, cm = int(raw[11:14]), int(raw[14])
+            codes.append({
+                "bus": "J1939", "raw": raw, "sa": sa,
+                "source": J1939_SOURCES.get(sa, "SA %d" % sa),
+                "spn": spn, "fmi": fmi, "occurrences": oc, "cm": cm,
+                "spn_name": SPN_NAMES.get(spn, ""),
+                "hex": dtc_hex(spn, fmi, oc, cm),
+                "code": "SPN %d FMI %d SA %d" % (spn, fmi, sa),
+            })
+        else:
+            codes.append({"bus": "OBD-II", "raw": raw, "code": raw})
+    return {"engine_light": parts[0] == "1", "count": int(parts[1] or 0), "codes": codes}
+
+
+def dtc_for_panel(decoded: Dict[str, object]) -> list:
+    """The list in the shape a fleet panel usually stores per vehicle:
+
+        [{"bus": "j1939", "code": "0x690A0C90",
+          "description": "SPN: 3216 \u2013 Aftertreatment 1 Intake NOx FMI: 10 Count: 105"},
+         {"bus": "obdii", "code": "P0420", "description": "P0420"}]
+
+    ``code`` is the hex form (``dtc_hex``), ``bus`` is lower case, and the
+    description reads ``SPN: n \u2013 name FMI: n Count: n`` (no name part
+    when the SPN is not in ``SPN_NAMES``). An empty list means no fault is
+    active - store it, it is how a repaired fault disappears.
+    """
+    out = []
+    for c in decoded["codes"]:
+        if c["bus"] == "J1939":
+            name = (" \u2013 " + c["spn_name"]) if c["spn_name"] else ""
+            out.append({"bus": "j1939", "code": c["hex"],
+                        "description": "SPN: %d%s FMI: %d Count: %d" % (c["spn"], name, c["fmi"], c["occurrences"])})
+        else:
+            out.append({"bus": "obdii", "code": c["raw"], "description": c["raw"]})
+    return out
